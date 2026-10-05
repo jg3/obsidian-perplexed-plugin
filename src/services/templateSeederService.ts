@@ -103,7 +103,7 @@ async function ensureFolder(app: App, folderPath: string): Promise<void> {
     const existing = app.vault.getAbstractFileByPath(normalized);
     if (existing) return;
     // Walk parents and create each missing segment so a nested path like
-    // `zz-cf-lib/templates` works on a fresh vault.
+    // `obsidian-perplexed/templates` works on a fresh vault.
     const segments = normalized.split('/').filter(s => s.length > 0);
     let cursor = '';
     for (const seg of segments) {

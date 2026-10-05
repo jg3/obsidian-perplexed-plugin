@@ -41,10 +41,10 @@ pnpm version
 ### Obsidian Development Setup
 ```bash
 # Create symbolic link to Obsidian plugins folder (macOS/Linux)
-ln -s $(pwd) /path/to/obsidian/vault/.obsidian/plugins/perplexed
+ln -s $(pwd) /path/to/obsidian/vault/.obsidian/plugins/obsidian-perplexed
 
 # Windows (PowerShell)
-New-Item -ItemType SymbolicLink -Path "C:\path\to\vault\.obsidian\plugins\perplexed" -Target "C:\path\to\perplexed"
+New-Item -ItemType SymbolicLink -Path "C:\path\to\vault\.obsidian\plugins\obsidian-perplexed" -Target "C:\path\to\perplexed"
 ```
 
 ## Architecture

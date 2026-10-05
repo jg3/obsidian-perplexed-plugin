@@ -21,7 +21,7 @@ Perplexed ships a set of **stored workflows** for checking, editing, and rewriti
 | **Customer-facing explanation** | Turn this into a customer-facing explanation without overselling or losing technical accuracy. |
 | **Capture a process** | Tell me about a checking, editing or modification process to make into another stored workflow. |
 
-The files live in the workflows folder (default `zz-cf-lib/workflows`). Edit them in the vault. **Capture a process** asks you to describe a checking, editing, or modification process and saves a new workflow file beside the others. It does not overwrite a file that is already there.
+The files live in the workflows folder (default `obsidian-perplexed/workflows`). Edit them in the vault. **Capture a process** asks you to describe a checking, editing, or modification process and saves a new workflow file beside the others. It does not overwrite a file that is already there.
 
 Four general research templates remain for empty notes: a concept, a vocabulary term, a source, and a toolkit profile. See [Directory Templates](#directory-templates). Market-map, market-category, and standards-and-specs profiles are no longer shipped. Delete any copies still in your templates folder if you do not want the palette to offer them.
 
@@ -492,7 +492,7 @@ Market-map, market-category, and standards-and-specs profiles are no longer ship
 
 ### Auto-seed behavior
 
-On first plugin load, Perplexed writes the four templates plus a user-facing `README.md` to the templates root (default `zz-cf-lib/templates`), and the stored workflows plus their README to the workflows root (default `zz-cf-lib/workflows`). The seeder uses a two-tier policy:
+On first plugin load, Perplexed writes the four templates plus a user-facing `README.md` to the templates root (default `obsidian-perplexed/templates`), and the stored workflows plus their README to the workflows root (default `obsidian-perplexed/workflows`). The seeder uses a two-tier policy:
 
 - **README** — always ensured present; if you delete it, the next plugin load writes it back.
 - **Templates** — only seeded when the templates folder is missing or contains no non-README markdown. A folder with even one shipped template is treated as user-managed and left alone.
@@ -558,12 +558,12 @@ pnpm dev
 
 1. **Create Symbolic Link** (macOS/Linux):
    ```bash
-   ln -s /path/to/your/plugin /path/to/obsidian/vault/.obsidian/plugins/perplexed
+   ln -s /path/to/your/plugin /path/to/obsidian/vault/.obsidian/plugins/obsidian-perplexed
    ```
 
 2. **Windows (PowerShell)**:
    ```powershell
-   New-Item -ItemType SymbolicLink -Path "C:\path\to\obsidian\vault\.obsidian\plugins\perplexed" -Target "C:\path\to\your\plugin"
+   New-Item -ItemType SymbolicLink -Path "C:\path\to\obsidian\vault\.obsidian\plugins\obsidian-perplexed" -Target "C:\path\to\your\plugin"
    ```
 
 3. **Enable in Obsidian**:
