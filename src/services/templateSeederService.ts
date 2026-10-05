@@ -1,5 +1,5 @@
 import type { App } from 'obsidian';
-import { Notice, normalizePath, TFolder } from 'obsidian';
+import { Notice, normalizePath } from 'obsidian';
 
 import readmeContent from '../docs/templates/README.md';
 import conceptProfile from '../docs/templates/concept-profile.md';
@@ -83,54 +83,50 @@ export const BUNDLED_PREAMBLES: Record<string, string> = {
 };
 
 /**
- * vault.create wrapped to tolerate the same race window ensureFolder handles:
- * getAbstractFileByPath returns null but a concurrent or just-finished write
- * has already produced the file (Obsidian's index lags behind the adapter
- * write). Treat "File already exists" as success — the caller's intent
+ * Adapter write wrapped to tolerate the race window where concurrent writes
+ * might run. Treat "File already exists" / EEXIST as success — the caller's intent
  * (file exists at path with content) is satisfied either way.
  */
 async function safeCreateFile(app: App, path: string, content: string): Promise<void> {
+    const normalized = normalizePath(path);
+    if (await app.vault.adapter.exists(normalized)) return;
     try {
-        await app.vault.create(path, content);
+        await app.vault.adapter.write(normalized, content);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        if (!/already exists/i.test(msg)) throw err;
+        if (!/already exists|EEXIST/i.test(msg)) throw err;
     }
 }
 
 async function ensureFolder(app: App, folderPath: string): Promise<void> {
     const normalized = normalizePath(folderPath);
-    const existing = app.vault.getAbstractFileByPath(normalized);
-    if (existing) return;
+    if (await app.vault.adapter.exists(normalized)) return;
     // Walk parents and create each missing segment so a nested path like
-    // `obsidian-perplexed/templates` works on a fresh vault.
+    // `.obsidian-perplexed/templates` works on a fresh vault.
     const segments = normalized.split('/').filter(s => s.length > 0);
     let cursor = '';
     for (const seg of segments) {
         cursor = cursor ? `${cursor}/${seg}` : seg;
-        if (!app.vault.getAbstractFileByPath(cursor)) {
+        if (!(await app.vault.adapter.exists(cursor))) {
             try {
-                await app.vault.createFolder(cursor);
+                await app.vault.adapter.mkdir(cursor);
             } catch (err) {
-                // Race / stale cache: getAbstractFileByPath can return null for
-                // a folder Obsidian has already begun creating. Treat the
-                // "already exists" path as success; rethrow anything else.
                 const msg = err instanceof Error ? err.message : String(err);
-                if (!/already exists/i.test(msg)) throw err;
+                if (!/already exists|EEXIST/i.test(msg)) throw err;
             }
         }
     }
 }
 
-function folderHasContent(app: App, folderPath: string): boolean {
+async function folderHasContent(app: App, folderPath: string): Promise<boolean> {
     const normalized = normalizePath(folderPath);
-    const folder = app.vault.getAbstractFileByPath(normalized);
-    if (!(folder instanceof TFolder)) return false;
+    if (!(await app.vault.adapter.exists(normalized))) return false;
+    const listed = await app.vault.adapter.list(normalized);
     // README is docs and is ignored when deciding whether the folder is
     // "user-populated" — a folder that contains only the shipped README still
     // counts as empty for seeding purposes.
-    return folder.children.some(child =>
-        child.path.endsWith('.md') && !child.path.endsWith('/README.md'),
+    return listed.files.some(file =>
+        file.endsWith('.md') && !file.endsWith('/README.md') && !file.endsWith('\\README.md'),
     );
 }
 
@@ -143,14 +139,14 @@ async function seedFolder(
     contentFiles: SeedFile[],
 ): Promise<{ seeded: number; reason: SeedReason }> {
     const normalized = normalizePath(root);
-    const existing = app.vault.getAbstractFileByPath(normalized);
-    const userPopulated = existing ? folderHasContent(app, normalized) : false;
+    const existing = await app.vault.adapter.exists(normalized);
+    const userPopulated = existing ? await folderHasContent(app, normalized) : false;
 
     await ensureFolder(app, normalized);
 
     let seeded = 0;
     const readmePath = `${normalized}/${readme.name}`;
-    if (!app.vault.getAbstractFileByPath(readmePath)) {
+    if (!(await app.vault.adapter.exists(readmePath))) {
         await safeCreateFile(app, readmePath, readme.content);
         seeded++;
     }
@@ -158,7 +154,7 @@ async function seedFolder(
     if (!userPopulated) {
         for (const file of contentFiles) {
             const path = `${normalized}/${file.name}`;
-            if (app.vault.getAbstractFileByPath(path)) continue;
+            if (await app.vault.adapter.exists(path)) continue;
             await safeCreateFile(app, path, file.content);
             seeded++;
         }
@@ -246,7 +242,7 @@ export async function reSeedMissingFiles(
         await ensureFolder(app, normalized);
         for (const file of files) {
             const path = `${normalized}/${file.name}`;
-            if (app.vault.getAbstractFileByPath(path)) {
+            if (await app.vault.adapter.exists(path)) {
                 skipped++;
                 continue;
             }

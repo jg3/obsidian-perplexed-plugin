@@ -1,6 +1,6 @@
 {
-	"name": "perplexed",
-	"version": "0.3.1",
+	"name": "obsidian-perplexed",
+	"version": "0.4.0-2026-10-05",
 	"description": "Generate source-cited research content through prompts and templates. From Perplexity, Anthropic Claude, Google Gemini, Perplexica (now Vane), or local LM Studio — directly into your notes.",
 	"main": "main.js",
 	"scripts": {
@@ -20,7 +20,7 @@
 		"Footnotes",
 		"Citations"
 	],
-	"author": "The Lossless Group",
+	"author": "JG3, forked from the Lossless Group",
 	"license": "MIT",
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

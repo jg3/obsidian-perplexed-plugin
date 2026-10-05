@@ -5,8 +5,14 @@ import type { PerplexityService } from './perplexityService';
 
 export type WorkflowKind = 'review' | 'capture';
 
+export interface WorkflowFileRef {
+    path: string;
+    basename: string;
+    name: string;
+}
+
 export interface StoredWorkflow {
-    file: TFile;
+    file: WorkflowFileRef | TFile;
     title: string;
     description: string;
     kind: WorkflowKind;
@@ -48,7 +54,7 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
     return fallback;
 }
 
-export function parseWorkflow(file: TFile, raw: string): StoredWorkflow {
+export function parseWorkflow(file: WorkflowFileRef | TFile, raw: string): StoredWorkflow {
     const { frontmatter, body } = splitFrontmatter(raw);
     const kindRaw = asString(frontmatter['kind'], 'review');
     const kind: WorkflowKind = kindRaw === 'capture' ? 'capture' : 'review';
@@ -65,20 +71,41 @@ export function parseWorkflow(file: TFile, raw: string): StoredWorkflow {
     };
 }
 
-export function listWorkflowFiles(app: App, root: string): TFile[] {
-    const folder = app.vault.getAbstractFileByPath(normalizePath(root));
+export async function listWorkflowFiles(app: App, root: string): Promise<WorkflowFileRef[]> {
+    const normalizedRoot = normalizePath(root);
+    if (await app.vault.adapter.exists(normalizedRoot)) {
+        const listed = await app.vault.adapter.list(normalizedRoot);
+        const files: WorkflowFileRef[] = [];
+        for (const filePath of listed.files) {
+            if (!filePath.endsWith('.md')) continue;
+            const name = filePath.split('/').pop() ?? '';
+            const basename = name.replace(/\.md$/, '');
+            if (basename === 'README') continue;
+            files.push({ path: filePath, basename, name });
+        }
+        return files.sort((a, b) => a.basename.localeCompare(b.basename));
+    }
+    const folder = app.vault.getAbstractFileByPath(normalizedRoot);
     if (!(folder instanceof TFolder)) return [];
     return folder.children
         .filter((child): child is TFile => child instanceof TFile)
         .filter(file => file.extension === 'md' && file.basename !== 'README')
+        .map(file => ({ path: file.path, basename: file.basename, name: file.name }))
         .sort((a, b) => a.basename.localeCompare(b.basename));
 }
 
 export async function loadWorkflows(app: App, root: string): Promise<StoredWorkflow[]> {
-    const files = listWorkflowFiles(app, root);
+    const files = await listWorkflowFiles(app, root);
     const workflows: StoredWorkflow[] = [];
     for (const file of files) {
-        const raw = await app.vault.read(file);
+        let raw: string;
+        if (await app.vault.adapter.exists(file.path)) {
+            raw = await app.vault.adapter.read(file.path);
+        } else if (file instanceof TFile) {
+            raw = await app.vault.read(file);
+        } else {
+            continue;
+        }
         workflows.push(parseWorkflow(file, raw));
     }
     return workflows;
@@ -138,12 +165,13 @@ export async function saveCapturedWorkflow(
 
     let filename = `${base}.md`;
     let suffix = 2;
-    while (app.vault.getAbstractFileByPath(`${normalizedRoot}/${filename}`)) {
+    while (await app.vault.adapter.exists(`${normalizedRoot}/${filename}`)) {
         filename = `${base}-${suffix.toString()}.md`;
         suffix++;
     }
     const path = `${normalizedRoot}/${filename}`;
-    await app.vault.create(path, unwrapped.endsWith('\n') ? unwrapped : `${unwrapped}\n`);
+    const content = unwrapped.endsWith('\n') ? unwrapped : `${unwrapped}\n`;
+    await app.vault.adapter.write(path, content);
     return path;
 }
 
@@ -152,12 +180,12 @@ async function ensureWorkflowFolder(app: App, folderPath: string): Promise<void>
     let cursor = '';
     for (const segment of segments) {
         cursor = cursor ? `${cursor}/${segment}` : segment;
-        if (app.vault.getAbstractFileByPath(cursor)) continue;
+        if (await app.vault.adapter.exists(cursor)) continue;
         try {
-            await app.vault.createFolder(cursor);
+            await app.vault.adapter.mkdir(cursor);
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            if (!/already exists/i.test(msg)) throw err;
+            if (!/already exists|EEXIST/i.test(msg)) throw err;
         }
     }
 }

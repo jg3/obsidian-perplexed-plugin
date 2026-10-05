@@ -335,9 +335,9 @@ Structure the article as follows:
     },
 
     // Directory templates (v0.1 spike defaults)
-    directoryTemplatesRoot: 'obsidian-perplexed/templates',
-    directoryTemplatesPartialsRoot: 'obsidian-perplexed/partials',
-    directoryTemplatesPreamblesRoot: 'obsidian-perplexed/preambles',
+    directoryTemplatesRoot: '.obsidian-perplexed/templates',
+    directoryTemplatesPartialsRoot: '.obsidian-perplexed/partials',
+    directoryTemplatesPreamblesRoot: '.obsidian-perplexed/preambles',
     directoryTemplatesSystemPreambles: ['inline-citation'],
     directoryTemplatesUserPreambles: [
         { name: 'research-framing', when: 'always' },
@@ -345,7 +345,7 @@ Structure the article as follows:
     ],
     directoryTemplatesFrontmatterWhitelist: ['title', 'og_description', 'tags', 'og_image'],
     directoryTemplatesRequestTimeoutMs: 1800000,
-    workflowsRoot: 'obsidian-perplexed/workflows',
+    workflowsRoot: '.obsidian-perplexed/workflows',
     vaultGitTracking: 'remind',
     vaultGitPush: false,
 
@@ -1255,7 +1255,7 @@ export default class PerplexedPlugin extends Plugin {
         }
 
         const root = this.settings.directoryTemplatesRoot;
-        const all = listDirectoryTemplates(this.app, root);
+        const all = await listDirectoryTemplates(this.app, root);
         if (all.length === 0) {
             new Notice(`No templates found under "${root}".`);
             return;
@@ -1304,7 +1304,7 @@ export default class PerplexedPlugin extends Plugin {
                     return;
                 }
 
-                const all = listDirectoryTemplates(this.app, this.settings.directoryTemplatesRoot);
+                const all = await listDirectoryTemplates(this.app, this.settings.directoryTemplatesRoot);
                 const matchingTemplates = all.filter(t =>
                     filesInFolder.some(f => pathMatchesGlobs(f.path, t.appliesToPaths))
                 );
@@ -2047,7 +2047,7 @@ class PerplexedSettingTab extends PluginSettingTab {
             .setName('Templates root')
             .setDesc('Vault-relative folder where directory templates live.')
             .addText(text => text
-                .setPlaceholder('Obsidian-perplexed/templates')
+                .setPlaceholder('.Obsidian-perplexed/templates')
                 .setValue(this.plugin.settings.directoryTemplatesRoot)
                 .onChange(async (value: string) => {
                     this.plugin.settings.directoryTemplatesRoot = value.trim();
@@ -2059,7 +2059,7 @@ class PerplexedSettingTab extends PluginSettingTab {
             .setName('Partials root')
             .setDesc('Vault-relative folder where reusable snippets live. Templates pull them in with {{include: name}}.')
             .addText(text => text
-                .setPlaceholder('Obsidian-perplexed/partials')
+                .setPlaceholder('.Obsidian-perplexed/partials')
                 .setValue(this.plugin.settings.directoryTemplatesPartialsRoot)
                 .onChange(async (value: string) => {
                     this.plugin.settings.directoryTemplatesPartialsRoot = value.trim();
@@ -2071,7 +2071,7 @@ class PerplexedSettingTab extends PluginSettingTab {
             .setName('Preambles root')
             .setDesc('Vault-relative folder where plugin-wide preambles live. Files here are auto-attached to every perplexity request per the lists below.')
             .addText(text => text
-                .setPlaceholder('Obsidian-perplexed/preambles')
+                .setPlaceholder('.Obsidian-perplexed/preambles')
                 .setValue(this.plugin.settings.directoryTemplatesPreamblesRoot)
                 .onChange(async (value: string) => {
                     this.plugin.settings.directoryTemplatesPreamblesRoot = value.trim();
@@ -2179,7 +2179,7 @@ class PerplexedSettingTab extends PluginSettingTab {
             .setName('Workflows root')
             .setDesc('Vault-relative folder where stored workflows live.')
             .addText(text => text
-                .setPlaceholder('Obsidian-perplexed/workflows')
+                .setPlaceholder('.Obsidian-perplexed/workflows')
                 .setValue(this.plugin.settings.workflowsRoot)
                 .onChange(async (value: string) => {
                     this.plugin.settings.workflowsRoot = value.trim();

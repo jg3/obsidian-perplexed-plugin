@@ -149,7 +149,7 @@ Four templates ship inlined into `main.js` (via esbuild's `.md` text loader) and
 | `source-profile.md` | `Sources/**` | `sonar-pro` | Profiles of trusted sources — books, people, channels, publications, journals, reports, events. Type-aware: the system prompt enumerates seven canonical types and the model picks one from frontmatter signals (`youtube_channel_url` → channel, `aliases` → likely book, etc.). Each section has per-type bullet shapes. |
 | `toolkit-profile.md` | `Tooling/**` | `sonar-pro` | Profiles of tools, products, platforms, frameworks. |
 
-Review, rewrite, and fact-check instructions ship separately as stored workflows (default folder `obsidian-perplexed/workflows`) and run from **Run stored workflow**.
+Review, rewrite, and fact-check instructions ship separately as stored workflows (default folder `.obsidian-perplexed/workflows`) and run from **Run stored workflow**.
 
 `source-profile` is the trickiest because `Sources/` is genuinely heterogeneous. The solution is one template, type-conditional content. Books also trigger Google Books URL handling: frontmatter `google_books_url` is used if present, otherwise the model finds it; either way the URL is harvested into frontmatter post-generation via regex, so subsequent runs skip the search.
 
