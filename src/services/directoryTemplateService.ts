@@ -4,6 +4,7 @@ import type { App } from 'obsidian';
 import { normalizePath, Notice, parseYaml, stringifyYaml, TFile } from 'obsidian';
 
 import { BUNDLED_PREAMBLES } from './templateSeederService';
+import { getPerplexityHttpsAgent } from '../utils/perplexityHttpsAgent';
 
 export interface UserPreambleSpec {
     name: string;
@@ -606,6 +607,7 @@ async function streamPerplexityToFile(
                         'Content-Type': 'application/json',
                         'Accept': 'text/event-stream',
                     },
+                    agent: getPerplexityHttpsAgent(),
                     signal: controller.signal,
                 },
                 (res) => {

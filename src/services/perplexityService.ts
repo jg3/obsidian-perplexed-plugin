@@ -4,6 +4,7 @@ import type { Editor} from 'obsidian';
 import { Notice, request } from 'obsidian';
 import type { PromptsService } from './promptsService';
 import { formatCitationDate, getMostRecentDate, formatPublicationInfo } from '../utils/formatDate';
+import { getPerplexityHttpsAgent } from '../utils/perplexityHttpsAgent';
 
 export interface PerplexityOptions {
     return_citations?: boolean;
@@ -538,6 +539,7 @@ export class PerplexityService {
                                     'Content-Type': 'application/json',
                                     'Accept': 'text/event-stream',
                                 },
+                                agent: getPerplexityHttpsAgent(),
                             },
                             (res) => {
                                 if (res.statusCode !== undefined && res.statusCode >= 400) {
