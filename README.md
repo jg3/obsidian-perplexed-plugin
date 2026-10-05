@@ -1,843 +1,361 @@
-![Perplexed: An Obsidian Plugin for Perplexity and Perplexica / Vane](https://i.imgur.com/MVOK3rk.png)
-# Perplexed: AI Content Generation for Obsidian
+![Obsidian Perplexed: AI Research, Grounded Citations, and Workflows](https://i.imgur.com/MVOK3rk.png)
 
-**Perplexed** is an Obsidian plugin that enables AI-powered content generation with source citations using [Perplexity](https://www.perplexity.ai/), [Anthropic Claude](https://www.anthropic.com/), [Google Gemini](https://ai.google.dev/) (with Google Search grounding), and [Perplexica / Vane](https://github.com/ItzCrazyKns/Vane) (self-hosted). This plugin brings research-grade AI capabilities directly into your Obsidian workspace, allowing you to generate well-cited content for your notes.
+# Obsidian Perplexed
 
-## General review workflows
+[![Release](https://img.shields.io/github/v/release/jg3/obsidian-perplexed-plugin?style=flat-square&color=blue)](https://github.com/jg3/obsidian-perplexed-plugin/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+[![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple?style=flat-square&logo=obsidian)](https://obsidian.md)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![AI Providers](https://img.shields.io/badge/AI_Providers-Perplexity_|_Claude_|_Gemini_|_Vane_|_LM_Studio-orange?style=flat-square)](https://www.perplexity.ai/)
 
-Perplexed ships a set of **stored workflows** for checking, editing, and rewriting the note you already have open. Select text (or leave the selection empty to use the whole note), run *Run stored workflow*, and pick an instruction. The result is appended under that text. Fact-check workflows cite current sources. The others stay on the supplied text and preserve its meaning.
+**Obsidian Perplexed** is an advanced AI research and workflow engine for Obsidian. It delivers real-time, source-grounded answers with verifiable citations directly into your notes—powered by [Perplexity](https://www.perplexity.ai/), [Google Gemini](https://ai.google.dev/) (with live Google Search grounding), [Anthropic Claude](https://www.anthropic.com/), self-hosted [Perplexica / Vane](https://github.com/ItzCrazyKns/Vane), and offline local LLMs via [LM Studio](https://lmstudio.ai/).
 
-| Workflow | What it does |
-|---|---|
-| **Unclear claims** | Identify unclear claims or missing evidence. |
-| **Fact-check** | Fact-check this; cite authoritative current sources. |
-| **Tighter executive version** | Suggest a tighter executive version; preserve meaning. |
-| **Contradictions** | Find contradictions, vague terms, and unsupported assertions. |
-| **Design review questions** | Create review questions for this technical design. |
-| **Security claims** | Review this for imprecise security claims, unstated assumptions, and missing controls. Keep recommendations actionable. |
-| **Time-sensitive fact-check** | Fact-check time-sensitive claims. List only claims that require verification and cite primary or authoritative sources. |
-| **Executive rewrite** | Rewrite for an executive audience: concise, concrete, and technically accurate. Preserve the intended meaning. |
-| **Network-security design review** | Identify ambiguity, contradictions, and terms that need definition for a network-security design review. |
-| **Customer-facing explanation** | Turn this into a customer-facing explanation without overselling or losing technical accuracy. |
-| **Capture a process** | Tell me about a checking, editing or modification process to make into another stored workflow. |
+Beyond simple prompt responses, Obsidian Perplexed brings structured editorial intelligence to your knowledge base: **11 stored review workflows** for fact-checking, rewriting, and design audits; **custom process capturing**; **batch directory-based note templating**; and automated **local Git commit tracking**.
 
-The files live in the workflows folder (default `zz-cf-lib/workflows`). Edit them in the vault. **Capture a process** asks you to describe a checking, editing, or modification process and saves a new workflow file beside the others. It does not overwrite a file that is already there.
+---
 
-Four general research templates remain for empty notes: a concept, a vocabulary term, a source, and a toolkit profile. See [Directory Templates](#directory-templates). Market-map, market-category, and standards-and-specs profiles are no longer shipped. Delete any copies still in your templates folder if you do not want the palette to offer them.
+> [!NOTE]
+> ### ℹ️ Fork Notice & Evolution
+> **Obsidian Perplexed** is an actively developed fork of [The Lossless Group's `perplexed-plugin`](https://github.com/lossless-group/perplexed-plugin).
+>
+> **What sets this fork apart:**
+> 1. **The Dotfile Vault Storage Convention (`.obsidian-perplexed/`)**: Auxiliary assets (workflows, templates, partials, and preambles) are stored in hidden dot-directories by default. They will not clutter your Obsidian file explorer, search results, or graph view.
+> 2. **11 General Review & Editing Workflows**: Replaced niche venture/equities research templates with eleven practical review instructions (`Run stored workflow`) for everyday drafting, fact-checking, security critiques, and executive rewrites.
+> 3. **Capture a Process**: Create new stored workflows interactively from plain-language descriptions without touching filesystem files manually.
+> 4. **Local Git Tracking Integration**: Native hooks with [Obsidian Git](https://github.com/Vinzent03/obsidian-git) to remind or commit vault modifications locally after AI generation (with remote pushes strictly opt-in).
+> 5. **Robust FileSystem Adapter Runtime**: Reads and writes through Obsidian's low-level data adapter, ensuring full compatibility with hidden folders, symlinked vaults, and multi-vault setups.
 
-After a workflow or directory template writes to the vault, Perplexed reminds you to commit the change locally with [Obsidian Git](https://github.com/Vinzent03/obsidian-git). Settings can instead run that plugin’s local commit. Remote push stays off unless you turn it on.
-
-## 🎯 Key Features
-![Perplexed UI Modal interface](https://i.imgur.com/jaZ4UfS.png)
-- **Source-Cited AI Responses**: Get AI-generated content with proper citations and references
-   - Default format:
-   > ```markdown
-    ### Citations
-
-[1]: 2024, Dec 13. [What is GRC (Governance, Risk and Compliance) - Metricstream](https://www.metricstream.com/learn/what-is-grc.html). Published: 2024-05-01 | Updated: 2024-12-13
-
-[2]: 2025, Jun 16. [Governance, risk and compliance (GRC): Definitions and resources](https://www.diligent.com/resources/guides/grc). Published: 2025-05-27 | Updated: 2025-06-16
-   > ```
-
-- **Multiple AI Providers**: Support for Perplexity, Anthropic Claude, Google Gemini (with Google Search grounding), Perplexica / Vane (self-hosted), and LM Studio (local)
-- **Streaming Responses**: Real-time streaming of AI responses for better UX
-- **Flexible Configuration**: Customizable endpoints, models, and parameters
-- **Deep Research Mode**: Comprehensive research across hundreds of sources
-- **Local LLM Support**: Integration with LM Studio for local AI processing
-
-## Network use and accounts
-
-Perplexed contacts these remote services on your behalf when you invoke
-their respective commands. Nothing is sent automatically — only the
-prompts you submit through a command modal, and any text you have
-explicitly selected when invoking selection-based commands.
-
-| Provider | Endpoint | Account | API key |
-|---|---|---|---|
-| Perplexity | `https://api.perplexity.ai/chat/completions` | Required | Required (paid) |
-| Anthropic Claude | `https://api.anthropic.com/v1/messages` | Required | Required (paid) |
-| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent` | Required ([AI Studio](https://aistudio.google.com/)) | Required (free tier available, no credit card) |
-| Perplexica / Vane ([install required](https://github.com/ItzCrazyKns/Vane)) | `http://localhost:3030/api/search` (default; user-configurable) | Not required | Not required (self-hosted, runs locally) |
-| LM Studio | `http://localhost:1234/v1/chat/completions` (default; user-configurable) | Not required | Not required (runs locally) |
-
-When Gemini's `google_search` grounding is enabled, the plugin also issues
-follow-up `GET` requests to `vertexaisearch.cloud.google.com/grounding-api-redirect/…`
-URLs to resolve them to the real source page (so your `### Citations` footer
-contains durable source URLs rather than short-lived Google redirects). The
-follow-up requests go through Obsidian's `requestUrl` (Node-side), not the
-browser fetch — no cross-origin permissions involved, and the request is
-strictly URL-resolution, no auth header.
-
-The plugin does not collect telemetry, ship vault content anywhere else,
-or update itself — Obsidian handles plugin updates through the community
-plugin directory.
+---
 
 ## 📋 Table of Contents
 
-- [General review workflows](#general-review-workflows)
-- [User Onboarding](#user-onboarding)
-  - [Installation](#installation)
-  - [Initial Setup](#initial-setup)
-  - [Using Perplexity](#using-perplexity)
-  - [Using Google Gemini](#using-google-gemini)
-  - [Using Perplexica / Vane](#using-perplexica--vane)
-  - [Using LM Studio](#using-lm-studio)
-  - [Command Reference](#command-reference)
-  - [Directory Templates](#directory-templates)
-- [Developer Onboarding](#developer-onboarding)
-  - [Project Structure](#project-structure)
-  - [Development Setup](#development-setup)
-  - [Architecture Overview](#architecture-overview)
-  - [Contributing](#contributing)
+- [🚀 How to Install](#-how-to-install)
+  - [Method 1: Manual Installation (Recommended)](#method-1-manual-installation-recommended)
+  - [Method 2: Using the BRAT Community Plugin](#method-2-using-the-brat-community-plugin)
+  - [Method 3: Local Development Symlink](#method-3-local-development-symlink)
+- [📖 How to Use](#-how-to-use)
+  - [1. Running Stored Review Workflows](#1-running-stored-review-workflows)
+  - [2. Capturing a New Process as a Workflow](#2-capturing-a-new-process-as-a-workflow)
+  - [3. Interactive Research Queries with Grounded Citations](#3-interactive-research-queries-with-grounded-citations)
+  - [4. Text Enhancement & Inline Visuals](#4-text-enhancement--inline-visuals)
+  - [5. Automated Directory Templates](#5-automated-directory-templates)
+  - [6. Local Vault Git Tracking](#6-local-vault-git-tracking)
+- [📁 The Dotfile Vault Convention](#-the-dotfile-vault-convention)
+- [⚙️ Initial Setup & Provider Configuration](#️-initial-setup--provider-configuration)
+  - [Perplexity Setup](#1-perplexity-setup-recommended)
+  - [Google Gemini Setup](#2-google-gemini-setup-free-tier-available)
+  - [Anthropic Claude Setup](#3-anthropic-claude-setup)
+  - [Perplexica / Vane Setup (Self-Hosted)](#4-perplexica--vane-setup-self-hosted)
+  - [LM Studio Setup (Offline Local LLMs)](#5-lm-studio-setup-offline-local-llms)
+- [🔒 Network, Accounts & Security Disclosures](#-network-accounts--security-disclosures)
+- [🛠️ Developer Guide](#️-developer-guide)
+- [⚖️ License & Acknowledgements](#️-license--acknowledgements)
 
 ---
 
-# User Onboarding
+## 🚀 How to Install
 
-## Installation
+Because Obsidian Perplexed is maintained outside the official public Obsidian Community Plugins directory, you install it manually, via the BRAT community plugin, or via a development symlink.
 
-1. **Download the Plugin**: 
-   - Download the latest release from the releases page
-   - Extract the ZIP file to your Obsidian plugins folder
+### Method 1: Manual Installation (Recommended)
 
-2. **Enable in Obsidian**:
-   - Open Obsidian Settings → Community Plugins
-   - Turn off Safe Mode
-   - Click "Install plugin from file"
-   - Select the extracted plugin folder
-   - Enable the "Perplexed" plugin
+1. Navigate to the [Releases](https://github.com/jg3/obsidian-perplexed-plugin/releases) page of this repository.
+2. Download the latest release assets: `main.js`, `manifest.json`, and `styles.css`.
+3. In your file manager, navigate to your Obsidian vault folder and open the hidden `.obsidian/plugins/` directory:
+   - macOS / Linux: `/<path-to-vault>/.obsidian/plugins/`
+   - Windows: `C:\<path-to-vault>\.obsidian\plugins\`
+4. Create a new folder named `obsidian-perplexed`.
+5. Place `main.js`, `manifest.json`, and `styles.css` into that `obsidian-perplexed` folder:
+   ```text
+   <Your-Vault>/
+   └── .obsidian/
+       └── plugins/
+           └── obsidian-perplexed/
+               ├── main.js
+               ├── manifest.json
+               └── styles.css
+   ```
+6. In Obsidian, open **Settings** (`Cmd/Ctrl + ,`) → **Community plugins**.
+7. Ensure **Restricted mode** is turned **off**, click **Reload plugins**, and toggle **Perplexed** on.
 
-## Initial Setup
+### Method 2: Using the BRAT Community Plugin
 
-### 1. Configure Perplexity (Recommended for most users)
+If you use [Obsidian42 - BRAT](https://github.com/TfTHacker/obsidian42-brat) to manage beta/unlisted plugins:
 
-Perplexity is a commercial AI service that provides high-quality, source-cited responses.
+1. Install and enable the **BRAT** plugin from Obsidian's official Community Plugins directory.
+2. Open the Command Palette (`Cmd/Ctrl + P`) and run:  
+   `BRAT: Add a beta plugin for testing`
+3. Enter the repository URL:
+   ```text
+   https://github.com/jg3/obsidian-perplexed-plugin
+   ```
+4. Click **Add Plugin**. BRAT downloads the latest release, installs it to `.obsidian/plugins/obsidian-perplexed`, and enables it automatically. Future updates will be tracked through BRAT.
 
-1. **Get API Key**:
-   - Visit [Perplexity AI](https://www.perplexity.ai/)
-   - Sign up for an account
-   - Navigate to API settings to get your API key
+### Method 3: Local Development Symlink
 
-2. **Configure in Plugin**:
-   - Open Obsidian Settings → Community Plugins → Perplexed
-   - Enter your Perplexity API key
-   - The default endpoint should work: `https://api.perplexity.ai/chat/completions`
+If you build from source or contribute changes:
 
-### 2. Configure Google Gemini (Free tier available)
+```bash
+# 1. Clone the repository
+git clone https://github.com/jg3/obsidian-perplexed-plugin.git
+cd obsidian-perplexed-plugin
 
-Google Gemini is Google's commercial AI service. The `google_search` grounding tool returns per-segment citation attribution — meaning each cited sentence is mapped back to the specific URL it came from, which becomes the verbatim quote in your `### Citations` footer. AI Studio's free tier requires **no credit card** to get started.
+# 2. Install dependencies and compile
+pnpm install
+pnpm run build
 
-1. **Get API key**:
-   - Visit [Google AI Studio](https://aistudio.google.com/apikey)
-   - Sign in with a Google account
-   - Click "Create API key" → copy the `AIza…` string
+# 3. Create a symlink in your vault's plugins folder
+# On macOS / Linux:
+ln -s "$(pwd)" "/path/to/your/vault/.obsidian/plugins/obsidian-perplexed"
 
-2. **Configure in plugin**:
-   - Open Obsidian Settings → Community Plugins → Perplexed
-   - Scroll to **Gemini (Google)**
-   - Paste your API key into "Gemini API key"
-   - Default model: `gemini-flash-latest` (always-current Flash, free-tier friendly) — `gemini-pro-latest` and pinned `gemini-2.5-pro` / `gemini-2.5-flash` also available
-   - Leave **Enable Google search grounding by default** on for source-cited research
-   - Leave **Resolve citation urls** on — this is what turns the grounding-redirect URLs into the real source URLs in your citations footer
-
-### 3. Configure Perplexica / Vane (self-hosted — requires local install)
-
-Perplexica / Vane is a free, open-source AI search engine that you run
-**locally on your own machine**. This plugin does not bundle the server
-or proxy to a hosted instance — you must install and run it yourself
-before the "Ask Perplexica / Vane" command will work.
-
-> **Note on naming:** The maintainer (`ItzCrazyKns`) renamed the
-> open-source self-hosted repo from **Perplexica** to **Vane** on
-> 2026-03-09 (commit `feat(app): rename to 'vane'`). The old GitHub URL
-> `ItzCrazyKns/Perplexica` redirects to `ItzCrazyKns/Vane`. A hosted
-> service at [perplexica.io](https://perplexica.io/) remains live under
-> the Perplexica name — that's a separate hosted product, not what you
-> self-install for use with this plugin. The local API surface this
-> plugin talks to (`/api/search`, focus modes, optimization modes) is
-> unchanged across the rename.
-
-1. **Install Perplexica / Vane locally**:
-   - Repo and full installation docs:
-     [github.com/ItzCrazyKns/Vane](https://github.com/ItzCrazyKns/Vane)
-   - Docker is the recommended install path; the repo's README walks
-     through `docker-compose` setup, configuring SearXNG, and choosing
-     your local LLM provider (Ollama, LM Studio, OpenAI-compatible
-     endpoints, etc.).
-   - Confirm the server is running and reachable, e.g.:
-     `curl http://localhost:3030/api/search`
-
-2. **Configure in this plugin**:
-   - Open Obsidian Settings → Community Plugins → Perplexed
-   - Set the Perplexica / Vane endpoint to where your local server is
-     listening (default: `http://localhost:3030/api/search`)
-   - Pick a focus mode, optimization mode, and the local model you've
-     configured the server to use
-
-### 4. Configure LM Studio (Optional)
-
-For local AI processing without internet dependency:
-
-1. **Install LM Studio**:
-   - Download from [LM Studio](https://lmstudio.ai/)
-   - Install and start the application
-
-2. **Configure in Plugin**:
-   - Set LM Studio endpoint: `http://localhost:1234/v1/chat/completions`
-   - Choose your preferred local model
-
-## Using Perplexity
-
-### Quick Start
-
-1. **Open Command Palette**: `Ctrl/Cmd + Shift + P`
-2. **Run Command**: Type "Ask Perplexity" and select it
-3. **Enter Your Question**: Type your research question
-4. **Configure Options**:
-   - **Model**: Choose from available Perplexity models
-   - **Citations**: Enable/disable source citations
-   - **Images**: Include image results
-   - **Recency Filter**: Filter results by time period
-   - **Streaming**: Enable real-time response streaming
-
-### Available Models
-
-- **sonar-pro**: Balanced performance and quality (recommended)
-- **sonar-small**: Fast responses, good for simple queries
-- **sonar-deep-research**: Comprehensive research across hundreds of sources
-- **llama-3.1-sonar-small-128k-online**: Extended context window
-- **llama-3.1-sonar-large-128k-online**: Large model with extended context
-
-### Example Usage
-
-#### Basic Research Query
-```
-Question: "What are the latest developments in quantum computing?"
-Model: sonar-pro
-Citations: Enabled
-Recency: Past month
+# On Windows (PowerShell running as Administrator):
+New-Item -ItemType SymbolicLink -Path "C:\path\to\vault\.obsidian\plugins\obsidian-perplexed" -Target "C:\path\to\obsidian-perplexed-plugin"
 ```
 
-#### Deep Research Analysis
-```
-Question: "Analyze the impact of AI on healthcare in the last 5 years"
-Model: sonar-deep-research
-Citations: Enabled
-Recency: Past 5 years
-```
+Then reload Obsidian and enable **Perplexed** in Community Plugins.
 
-**Note**: Deep research mode conducts exhaustive analysis across hundreds of sources and may take 30-60 seconds.
+---
 
-### Response Format
+## 📖 How to Use
 
-Perplexity responses include:
-- **Main Answer**: Comprehensive response to your question
-- **Citations**: Numbered references with source links
-- **Images**: Relevant images (if enabled)
-- **Related Questions**: Additional questions for exploration (if enabled)
+![Perplexed Modal Interface](https://i.imgur.com/jaZ4UfS.png)
 
-### Text Enhancement
+### 1. Running Stored Review Workflows
 
-Enhance selected text using Perplexity AI to improve clarity, add details, and make content more comprehensive.
+Stored workflows allow you to review, fact-check, critique, or rewrite existing note content using Perplexity without copying and pasting into a browser.
 
-#### Quick Start
+1. Open any note in Obsidian.
+2. Highlight a passage of text. *(If no text is selected, the workflow runs against the entire active note.)*
+3. Open the Command Palette (`Cmd/Ctrl + P`) and run **`Perplexed: Run stored workflow`**.
+4. Select one of the 11 shipped workflows:
 
-1. **Select Text**: Highlight the text you want to enhance in your note
-2. **Open Command Palette**: `Ctrl/Cmd + Shift + P`
-3. **Run Command**: Type "Enhance Selected Text with Perplexity" and select it
-4. **Configure Options**:
-   - **Model**: Choose from available Perplexity models
-   - **Citations**: Enable/disable source citations
-   - **Images**: Include image results
-   - **Streaming**: Enable real-time response streaming
-
-#### Enhancement Options
-
-- **Replace Original**: Replace the selected text with the enhanced version
-- **Insert Below**: Insert the enhanced text below the current cursor position
-- **Preview**: Review the enhanced text before applying changes
-
-#### Example Usage
-
-**Original Text**:
-```
-AI is changing how we work.
-```
-
-**Enhanced Text**:
-```
-Artificial Intelligence (AI) is fundamentally transforming how we work across various industries and sectors. From automating routine tasks to enabling more sophisticated decision-making processes, AI technologies are reshaping traditional workflows and creating new opportunities for productivity and innovation.
-```
-
-## Using Google Gemini
-
-### Quick start
-
-1. **Open Command Palette**: `Ctrl/Cmd + Shift + P`
-2. **Run Command**: Type "Ask Gemini" and select it
-3. **Enter your question** in the textarea
-4. **Configure options** in the modal:
-   - **Model**: `gemini-flash-latest` (recommended, free-tier friendly), `gemini-pro-latest`, or pinned 2.5 versions
-   - **Enable Google search grounding**: server-side `google_search` tool; emits per-segment citations
-   - **Append Google searches list**: appends a Markdown bullet list of the queries Gemini ran, each linked to `google.com/search` (Markdown-native substitute for Google's required Search Suggestions chip)
-   - **Resolve citation urls**: resolves the `vertexaisearch.cloud.google.com` grounding-redirect URLs to durable source URLs + real page titles before writing the citations footer
-   - **Stream response**: incremental writing to the note as the response arrives
-
-### Available models
-
-- **gemini-flash-latest**: Google's always-current Flash alias, free-tier friendly (recommended default)
-- **gemini-pro-latest**: Always-current Pro alias for deepest reasoning
-- **gemini-2.5-pro**: Pinned Pro version (free-tier quota typically exhausted; paid tier required)
-- **gemini-2.5-flash**: Pinned Flash version for reproducibility
-
-### Why Gemini's citations are different
-
-Gemini's `groundingSupports[]` carries per-segment attribution that survives the full response round-trip — meaning the `### Citations` footer contains the verbatim quote per source, attached to the prose above it. Compare to Claude's `web_search_20260209`, where the dynamic-filter sandbox post-processes search results and per-claim attachment doesn't survive: text blocks come back with `citations: null`.
-
-The plugin walks two layers of provenance:
-
-| Layer | Field | What it gives you |
+| Workflow | Behavior | Citation Mode |
 |---|---|---|
-| Page-level | `groundingChunks[]` | URL + title per page Gemini consulted |
-| Segment-level | `groundingSupports[]` | Text span (`segment.text`) → indices into `groundingChunks[]` |
+| **Fact-check** | Verifies statements against authoritative sources and adds citations. | Citations enabled (recency: month) |
+| **Time-sensitive fact-check** | Validates recent or rapidly changing claims against primary documentation. | Citations enabled (recency: month) |
+| **Unclear claims** | Highlights missing evidence, ambiguities, and unsubstantiated assertions. | Review analysis |
+| **Contradictions** | Flags internal inconsistencies, vague terminology, and conflicting statements. | Review analysis |
+| **Security claims** | Audits imprecise security claims, unstated trust assumptions, and missing controls. | Actionable review |
+| **Design review questions** | Generates probing architectural review questions for a technical design doc. | Technical review |
+| **Network-security design review** | Probes network architectures for undefined boundaries, protocol gaps, and trust assumptions. | Technical review |
+| **Tighter executive version** | Distills content into a tight summary while strictly preserving factual meaning. | Prose synthesis |
+| **Executive rewrite** | Rewrites prose for an executive audience: concise, direct, and technically accurate. | Prose synthesis |
+| **Customer-facing explanation** | Adapts technical mechanics into clear customer communication without overselling. | Prose synthesis |
+| **Capture a process** | Interactive prompt to synthesize and save a new workflow file (see below). | Workflow creation |
 
-Page-level chunks become URL-and-title fallbacks; segment-level supports enrich them with the verbatim quote Gemini grounded against. Citation footer mirrors Claude's exactly (`[N]: [Title](url). > cited_text`) so [cite-wide](https://github.com/lossless-group/cite-wide)'s hex-substitution pass works on Gemini output too.
-
-### Example usage
-
-#### Basic research with grounding
-```
-Question: "Who won the 2024 Nobel Prize in Physics and what was the citation?"
-Model: gemini-flash-latest
-Grounding: Enabled
-Resolve URLs: Enabled
-```
-
-Lands in the note with prose like:
-
-> The 2024 Nobel Prize in Physics was jointly awarded to John J. Hopfield and Geoffrey Hinton.
->
-> The Nobel Prize Committee cited them "for foundational discoveries and inventions that enable machine learning with artificial neural networks".
-
-…followed by a `### Google Searches` section listing the queries Gemini issued, and a `### Citations` footer where each entry is `[N]: [Real Page Title](https://nobelprize.org/…)` with the verbatim segment as a blockquote.
-
-## Using Perplexica / Vane
-
-### Quick Start
-
-1. **Open Command Palette**: `Ctrl/Cmd + Shift + P`
-2. **Run Command**: Type "Ask Perplexica / Vane" and select it
-3. **Enter Your Question**: Type your research question
-4. **Configure Options**:
-   - **Focus Mode**: Choose search specialization
-   - **Optimization**: Balance speed vs. quality
-   - **Streaming**: Enable real-time response streaming
-
-### Focus Modes
-
-- **webSearch**: General web search (default)
-- **academicSearch**: Academic and research papers
-- **writingAssistant**: Writing and content creation
-- **wolframAlpha**: Mathematical and computational queries
-- **youtubeSearch**: Video content search
-- **redditSearch**: Reddit community discussions
-
-### Optimization Modes
-
-- **speed**: Fastest responses
-- **balanced**: Good balance of speed and quality
-- **quality**: Highest quality responses
-
-### Example Usage
-
-#### Academic Research
-```
-Question: "What are the current theories about dark matter?"
-Focus Mode: academicSearch
-Optimization: quality
-```
-
-#### Content Writing
-```
-Question: "Help me write an introduction about climate change"
-Focus Mode: writingAssistant
-Optimization: balanced
-```
-
-## Using LM Studio
-
-### Quick Start
-
-1. **Open Command Palette**: `Ctrl/Cmd + Shift + P`
-2. **Run Command**: Type "Ask LM Studio" and select it
-3. **Enter Your Question**: Type your question
-4. **Configure Options**:
-   - **Model**: Choose your local model
-   - **System Prompt**: Customize AI behavior
-   - **Temperature**: Control response creativity
-   - **Max Tokens**: Limit response length
-
-### Example Usage
-
-#### Creative Writing
-```
-Question: "Write a short story about a robot learning to paint"
-Model: ibm/granite-3.2-8b
-Temperature: 0.8
-System Prompt: "You are a creative storyteller who writes engaging narratives."
-```
-
-#### Technical Analysis
-```
-Question: "Explain how neural networks work"
-Model: microsoft/phi-4-reasoning-plus
-Temperature: 0.3
-System Prompt: "You are a technical expert who explains complex concepts clearly."
-```
-
-## Command Reference
-
-### Perplexity Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `Ask Perplexity` | Query Perplexity AI with full configuration | Editor command with modal interface |
-| `Enhance Selected Text with Perplexity` | Enhance selected text using Perplexity AI | Editor command with modal interface |
-| `Run stored workflow` | Apply a saved review, rewrite, or fact-check instruction to the selection or the whole note | Editor command with a workflow picker |
-| `Update Perplexity URL` | Change Perplexity API endpoint | Settings command |
-| `Show Perplexity Settings` | Display current Perplexity configuration | Debug command |
-
-### Google Gemini Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `Ask Gemini` | Query Google Gemini with Google Search grounding | Editor command with modal interface |
-| `Check Gemini service status` | Report whether the service initialized and the API key is configured | Debug command |
-
-### Perplexica / Vane Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `Ask Perplexica / Vane` | Query Perplexica / Vane with focus and optimization modes | Editor command with modal interface |
-| `Update Perplexica / Vane URL` | Change Perplexica / Vane API endpoint | Settings command |
-| `Show Perplexica / Vane Settings` | Display current Perplexica / Vane configuration | Debug command |
-
-### LM Studio Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `Ask LM Studio` | Query local LM Studio with custom parameters | Editor command with modal interface |
-| `Update LM Studio URL` | Change LM Studio API endpoint | Settings command |
-| `Show LM Studio Settings` | Display current LM Studio configuration | Debug command |
-
-### Keyboard Shortcuts
-
-You can set custom keyboard shortcuts for any command:
-1. Open Obsidian Settings → Hotkeys
-2. Search for "Perplexed" commands
-3. Assign your preferred shortcuts
+The generated analysis or rewrite streams in and appends cleanly below the selected text or at the end of the note.
 
 ---
 
-## Directory Templates
+### 2. Capturing a New Process as a Workflow
 
-**Per-folder content generation — one template fills a whole category of files.**
+You can turn any editorial policy, code review standard, or audit heuristic into a permanent stored workflow:
 
-Originally specced as "prompt outlines"; the shipped paradigm is broader and is called *directory templates* throughout the code and command palette. Full reference: [`docs/directory-templates.md`](docs/directory-templates.md). Engineering changelog: [`changelog/2026-05-10_01.md`](changelog/2026-05-10_01.md).
-
-### Why this exists
-
-A working Obsidian vault collects categories of files that share a shape — concepts, vocabulary terms, sources, tooling profiles. Filling them out one editor-callback at a time is untenable when you have hundreds or thousands. A directory template is a single markdown file that says *"for any file under `concepts/**`, here is the structure to fill and the system prompt to use,"* and the runtime applies it to one file or a whole folder via Perplexity research with streaming writes.
-
-### The three primitives
-
-1. **Template** — a markdown file in `Content-Dev/Templates/` with frontmatter (`applies-to-paths` glob), a fenced `cft` config block (provider, model, return flags, system prompt with interpolation tokens like `{{basename}}` and `{{frontmatter.tags}}`), and a heading skeleton that becomes the user prompt. Everything below the first `***` divider is excluded from the request — it's your scratch space.
-2. **Commands** — `Apply directory template to current file` auto-matches via the glob; `Apply directory template to folder` runs a batch with a confirmation modal; `Stop directory template batch` halts a running batch.
-3. **Cleanup pipeline** — after the SSE stream completes, the runtime wraps `<think>` blocks, swaps `[IMAGE N: <description>]` markers for real embeds (with a fallback `# Images` section when the model didn't emit markers but Perplexity returned images), strips unreplaced placeholders, appends a `# Sources` footer in the format [cite-wide](https://github.com/lossless-group/cite-wide) can convert to hex citations, and stamps `cf_last_run` + `cf_last_run_model` into the target's frontmatter.
-
-### Partials and preambles — shared guidance across templates
-
-Two peer folders alongside `templates/` keep editorial rules vault-visible and DRY:
-
-```
-Content-Dev/
-├── templates/         (your four profile templates)
-├── partials/          (reusable snippets included via {{include: name}})
-│   ├── mermaid-discipline.md      (paired BAD/GOOD examples + 6-item self-check)
-│   └── latex-discipline.md        (Obsidian MathJax delimiters + $ escaping)
-└── preambles/         (auto-attached to every request as system / user messages)
-    ├── inline-citation.md
-    ├── image-placement.md
-    └── research-framing.md
-```
-
-- **`{{include: name}}`** in a template body splices in `partials/name.md` recursively (depth-limited, cycle-detected). Missing files show as inline `[[include: name — file not found]]` markers so typos stay visible.
-- **Preambles auto-attach** to every Perplexity request with bundled defaults as fallback. Settings tab exposes Partials root, Preambles root, System preambles (default: `inline-citation`), User preambles (default: `image-placement` when return-images is on).
-- **Per-template overrides** in the `cft` fence: `preambles: { system: [...], skip-user: [...], skip-all: true }`.
-
-Fix the mermaid quoting rule once in `partials/mermaid-discipline.md` and every future template generation picks it up — no template editing required.
-
-### Shipped templates
-
-Four templates ship inlined into the plugin and seed into your vault on first plugin load. All four use Perplexity's `sonar-pro`.
-
-| File | Targets | Use for |
-|---|---|---|
-| `concept-profile.md` | `concepts/**` | Encyclopedia-style entries on ideas, patterns, mental models. Anti-incumbent editorial stance baked in (tech giants treated as adopters/popularizers, not innovators, unless documented heyday-era origination supports otherwise). Includes both `mermaid-discipline` and `latex-discipline` partials. |
-| `vocabulary-profile.md` | `Vocabulary/**` | Term definitions with disambiguation through an innovation-consulting lens. |
-| `source-profile.md` | `Sources/**` | Profiles of books, people, channels, publications, journals, reports, events — type-aware, with Google Books URL harvesting for books. |
-| `toolkit-profile.md` | `Tooling/**` | Profiles of tools, products, platforms, frameworks. |
-
-Market-map, market-category, and standards-and-specs profiles are no longer shipped. A vault that already has those files will keep offering them until you delete the copies under your templates root. See [`docs/directory-templates.md`](docs/directory-templates.md) for the cft-block grammar, including `max-tokens` and timeout overrides if you write a long template of your own.
-
-### Auto-seed behavior
-
-On first plugin load, Perplexed writes the four templates plus a user-facing `README.md` to the templates root (default `zz-cf-lib/templates`), and the stored workflows plus their README to the workflows root (default `zz-cf-lib/workflows`). The seeder uses a two-tier policy:
-
-- **README** — always ensured present; if you delete it, the next plugin load writes it back.
-- **Templates** — only seeded when the templates folder is missing or contains no non-README markdown. A folder with even one shipped template is treated as user-managed and left alone.
-
-A **Re-seed templates** button in *Settings → Directory templates* writes any shipped file whose filename doesn't already exist — useful for pulling in a new template after a plugin update without overwriting your edits.
-
-### Writing your own template
-
-Copy any shipped template under a new filename, change the frontmatter (`title`, `description`, `applies-to-paths` glob), rewrite the `cft` block's `system:` prompt for your domain, and rewrite the heading skeleton with the structure you want. Save in `Content-Dev/Templates/`. The plugin picks it up on the next palette invocation — no reload needed.
-
-For interpolation tokens, the full cft block grammar, the cleanup pipeline mechanics, the editorial stance rationale, frontmatter stamps, and known limits — see [`docs/directory-templates.md`](docs/directory-templates.md).
+1. Open the Command Palette and run **`Perplexed: Capture a process`** (or select **Capture a process** in the workflow picker).
+2. Enter a description of your checking, editing, or evaluation rules in natural language.
+   *Example: "Review this API specification for missing idempotency keys, unhandled error responses, and lack of rate-limiting parameters."*
+3. Obsidian Perplexed prompts Perplexity to synthesize an optimized Markdown workflow containing frontmatter (`title`, `description`, `model`, `return-citations`) and system instructions.
+4. The workflow is automatically saved into `.obsidian-perplexed/workflows/<slug>.md`. It will never overwrite an existing file (collisions receive a numeric suffix).
+5. The new workflow immediately appears in your **Run stored workflow** picker.
 
 ---
 
-# Developer Onboarding
+### 3. Interactive Research Queries with Grounded Citations
 
-## Project Structure
+Run interactive research queries directly from the editor palette:
 
+* **`Perplexed: Ask Perplexity`**: Grounded web research using Perplexity's `sonar-pro`, `sonar-small`, or exhaustive `sonar-deep-research`. Supports domain and time-recency filters (`day`, `week`, `month`, `year`).
+* **`Perplexed: Ask Gemini`**: Google Search grounding via `gemini-flash-latest` or `gemini-pro-latest`. Provides sentence-level citation mapping and resolves redirect URLs to durable destination links.
+* **`Perplexed: Ask Claude`**: Reasoning and synthesis via Anthropic Claude (`claude-3-7-sonnet-latest`) with server-side web search.
+* **`Perplexed: Ask Perplexica / Vane`**: Queries your self-hosted local instance with selectable focus modes (`webSearch`, `academicSearch`, `writingAssistant`, `youtubeSearch`).
+* **`Perplexed: Ask LM Studio`**: Runs prompts against any local model running on your machine via LM Studio's OpenAI-compatible server (`http://localhost:1234`).
+
+#### Citations Format
+Responses include verifiable citations formatted cleanly for Obsidian:
+```markdown
+### Citations
+
+[1]: [Governance, Risk, and Compliance: Principles and Practice](https://example.com/grc-guide)
+> "GRC frameworks align IT operations with organizational governance and compliance mandates."
+
+[2]: [NIST SP 800-53 Rev. 5 Security Controls](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
 ```
-perplexed-plugin/
-├── main.ts                 # Main plugin file with all functionality
-├── manifest.json           # Plugin metadata and requirements
-├── package.json            # Dependencies and build scripts
-├── esbuild.config.mjs      # Build configuration
-├── tsconfig.json           # TypeScript configuration
-├── styles.css              # Plugin styles (if any)
-└── README.md              # This file
+
+---
+
+### 4. Text Enhancement & Inline Visuals
+
+Highlight text in your editor and run:
+* **`Perplexed: Enhance selected text with Perplexity`**: Refines clarity, elaborates on core ideas, or fixes structure, with options to replace the selection or insert below.
+* **`Perplexed: Enhance selected text with images via Perplexity`**: Finds relevant web images illustrating concepts in your text and inserts markdown image embeds.
+
+---
+
+### 5. Automated Directory Templates
+
+For vaults maintaining hundreds of structured entries (e.g., technical definitions, concept encyclopedias, tooling reviews):
+
+1. **Templates** live in `.obsidian-perplexed/templates/` and specify an `applies-to-paths` glob in frontmatter along with a fenced `cft` YAML config block.
+2. Open an active note and run **`Perplexed: Apply directory template to current file`** (matches automatically by path).
+3. Or run **`Perplexed: Apply directory template to folder`** to batch-process a collection of files with a confirmation summary.
+4. **Shared Partials & Preambles**:
+   - Write reusable guidance in `.obsidian-perplexed/partials/` and splice it into any template via `{{include: partial-name}}` (cycle and depth protected).
+   - Global preambles in `.obsidian-perplexed/preambles/` (such as `inline-citation.md` or `mermaid-discipline.md`) auto-attach to requests.
+
+Four general research profiles are seeded by default:
+- `concept-profile.md` (targets `concepts/**`)
+- `vocabulary-profile.md` (targets `Vocabulary/**`)
+- `source-profile.md` (targets `Sources/**`)
+- `toolkit-profile.md` (targets `Tooling/**`)
+
+---
+
+### 6. Local Vault Git Tracking
+
+Keep an effortless audit trail of AI generations:
+* Whenever a stored workflow, process capture, or directory template writes to your vault, the plugin can automatically invoke [Obsidian Git](https://github.com/Vinzent03/obsidian-git).
+* Configure **Settings → Vault Git**:
+  - `Remind`: Displays an unobtrusive notice reminding you to commit.
+  - `Commit locally`: Automatically executes `obsidian-git:commit` to record changes in your local git history.
+  - `Off`: Disables tracking notices.
+* **Remote push is disabled by default** (`vaultGitPush: false`) ensuring nothing leaves your machine unless you explicitly turn on remote syncing.
+
+---
+
+## 📁 The Dotfile Vault Convention
+
+To keep your Obsidian workspace pristine, Obsidian Perplexed stores its templates, workflows, partials, and preambles in a hidden directory at the root of your vault:
+
+```text
+<Your-Vault-Root>/
+├── .obsidian-perplexed/          <-- Hidden dot-folder (keeps file explorer clean)
+│   ├── workflows/                <-- 11 shipped review workflows + captured processes
+│   │   ├── unclear-claims.md
+│   │   ├── fact-check.md
+│   │   ├── executive-rewrite.md
+│   │   └── ...
+│   ├── templates/                <-- Directory templates (concept, vocabulary, etc.)
+│   ├── partials/                 <-- Reusable snippets (mermaid-discipline, etc.)
+│   └── preambles/                <-- Auto-attached system/user prompts
+│
+├── concepts/                     <-- Your real vault notes
+├── projects/
+└── daily/
 ```
 
-## Development Setup
+### Why the Dotfile Convention Matters
+* **No File Tree Clutter**: Obsidian's File Explorer, Quick Switcher, Graph View, and note search automatically ignore folders starting with a period (`.`). Your navigation pane stays focused solely on your personal knowledge notes.
+* **Safe Seeding**: On first run, default workflows and templates are automatically created. The seeder is idempotent: it never overwrites existing templates or workflows that you have customized.
+* **Re-seeding Missing Files**: The **Re-seed templates** button in settings will restore any missing default files without touching your customized edits.
+* **Customizable Roots**: If you prefer these files to be visible in your Obsidian file explorer, simply change the paths in **Settings → Directory templates / Stored workflows** (e.g., to `obsidian-perplexed/workflows` or `templates/workflows`).
+
+---
+
+## ⚙️ Initial Setup & Provider Configuration
+
+### 1. Perplexity Setup (Recommended)
+1. Sign up at [Perplexity AI](https://www.perplexity.ai/) and generate an API key under API Settings.
+2. In Obsidian: **Settings → Perplexed → Perplexity**.
+3. Paste your API key. Default endpoint: `https://api.perplexity.ai/chat/completions`.
+4. Recommended model: `sonar-pro` (or `sonar-deep-research` for comprehensive reports).
+
+### 2. Google Gemini Setup (Free Tier Available)
+1. Get a free API key at [Google AI Studio](https://aistudio.google.com/apikey) (no credit card required).
+2. In Obsidian: **Settings → Perplexed → Gemini (Google)**.
+3. Paste your API key. Recommended default model: `gemini-flash-latest`.
+4. Leave **Enable Google search grounding** and **Resolve citation urls** enabled for source-verified responses.
+
+### 3. Anthropic Claude Setup
+1. Generate an API key at the [Anthropic Console](https://console.anthropic.com/).
+2. In Obsidian: **Settings → Perplexed → Anthropic (Claude)**.
+3. Paste your API key. Default model: `claude-3-7-sonnet-latest`.
+
+### 4. Perplexica / Vane Setup (Self-Hosted)
+[Vane (formerly Perplexica)](https://github.com/ItzCrazyKns/Vane) is an open-source, local AI search engine.
+1. Run Vane locally via Docker (default port `3030`).
+2. In Obsidian: **Settings → Perplexed → Perplexica / Vane**.
+3. Verify endpoint URL: `http://localhost:3030/api/search`.
+
+### 5. LM Studio Setup (Offline Local LLMs)
+Run open-source models (Llama, Mistral, Qwen, DeepSeek) completely offline with zero data leaving your machine.
+1. Download and run [LM Studio](https://lmstudio.ai/).
+2. Load your model of choice and start the local server (default port `1234`).
+3. In Obsidian: **Settings → Perplexed → LM Studio**.
+4. Set endpoint to `http://localhost:1234/v1/chat/completions`.
+
+---
+
+## 🔒 Network, Accounts & Security Disclosures
+
+Obsidian Perplexed connects to external services **strictly when you explicitly invoke an AI command**. Nothing is transmitted in the background.
+
+| Provider | Endpoint | Auth | Notes |
+|---|---|---|---|
+| **Perplexity** | `https://api.perplexity.ai/chat/completions` | API key (paid) | Streams responses with web citations. |
+| **Google Gemini** | `https://generativelanguage.googleapis.com/` | API key (free tier available) | Search-grounded queries; resolves grounding redirect URLs via Obsidian `requestUrl`. |
+| **Anthropic Claude** | `https://api.anthropic.com/v1/messages` | API key (paid) | Server-side web search grounding. |
+| **Perplexica / Vane** | `http://localhost:3030/api/search` | None | Completely self-hosted; runs on local machine. |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` | None | Completely local and offline. |
+
+* **Zero Telemetry**: This plugin does not collect analytics, logs, or user telemetry.
+* **Local Storage**: API keys and configurations are stored in your vault's private `.obsidian/plugins/obsidian-perplexed/data.json` file on disk. Never commit `data.json` to public version control.
+
+---
+
+## 🛠️ Developer Guide
 
 ### Prerequisites
+* [Node.js](https://nodejs.org/) (v18 or higher)
+* [pnpm](https://pnpm.io/) (v9 or v10 recommended)
 
-- Node.js (v18 or higher)
-- pnpm (recommended) or npm
-- Obsidian desktop application
-- Git
-
-### Installation
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/lossless-group/perplexed-plugin.git
-   cd perplexed-plugin
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-pnpm install
-   ```
-
-3. **Build the Plugin**:
-   ```bash
-pnpm build
-   ```
-
-4. **Development Mode**:
-   ```bash
-pnpm dev
-```
-
-### Testing Your Plugin
-
-1. **Create Symbolic Link** (macOS/Linux):
-   ```bash
-   ln -s /path/to/your/plugin /path/to/obsidian/vault/.obsidian/plugins/perplexed
-   ```
-
-2. **Windows (PowerShell)**:
-   ```powershell
-   New-Item -ItemType SymbolicLink -Path "C:\path\to\obsidian\vault\.obsidian\plugins\perplexed" -Target "C:\path\to\your\plugin"
-   ```
-
-3. **Enable in Obsidian**:
-   - Open Obsidian Settings → Community Plugins
-   - Disable Safe Mode
-   - Enable the "Perplexed" plugin
-
-## Architecture Overview
-
-### Core Components
-
-1. **PerplexedPlugin Class** (`main.ts`):
-   - Main plugin class extending Obsidian's Plugin
-   - Manages settings, commands, and UI components
-   - Handles API interactions with all providers
-
-2. **Settings Management**:
-   - `PerplexedPluginSettings` interface defines all configurable options
-   - `PerplexedSettingTab` provides the settings UI
-   - Settings are persisted using Obsidian's data API
-
-3. **Command Registration**:
-   - `registerPerplexityCommands()`: Perplexity-specific commands
-   - `registerPerplexicaCommands()`: Perplexica-specific commands
-   - `registerLMStudioCommands()`: LM Studio-specific commands
-
-4. **API Integration**:
-   - `queryPerplexity()`: Handles Perplexity API calls
-   - `queryPerplexica()`: Handles Perplexica API calls
-   - `queryLMStudio()`: Handles LM Studio API calls
-
-### Key Features Implementation
-
-#### Streaming Responses
-```typescript
-// Example from queryPerplexity method
-if (useStreaming) {
-    const reader = response.body?.getReader();
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = new TextDecoder().decode(value);
-        // Process and display chunk in real-time
-    }
-}
-```
-
-#### Modal Interfaces
-Each command uses Obsidian's Modal class to create user-friendly input forms:
-```typescript
-const modal = new (class extends Modal {
-    private queryInput!: HTMLTextAreaElement;
-    
-    onOpen() {
-        // Create form elements
-    }
-    
-    async onSubmit() {
-        // Handle form submission
-    }
-})(this.app, this, editor);
-```
-
-#### Error Handling
-Comprehensive error handling for API failures, network issues, and invalid configurations:
-```typescript
-try {
-    const response = await fetch(endpoint, options);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-} catch (error) {
-    new Notice(`Error: ${error.message}`);
-    console.error('API Error:', error);
-}
-```
-
-### Configuration Management
-
-The plugin supports extensive configuration through the settings interface:
-
-```typescript
-interface PerplexedPluginSettings {
-    perplexityApiKey: string;
-    perplexityEndpoint: string;
-    perplexicaEndpoint: string;
-    lmStudioEndpoint: string;
-    defaultModel: string;
-    defaultOptimizationMode: string;
-    defaultFocusMode: string;
-    // ... additional settings
-}
-```
-
-### Build System
-
-The project uses esbuild for fast compilation:
-
-```javascript
-// esbuild.config.mjs
-import esbuild from 'esbuild';
-import process from 'process';
-import builtins from 'builtin-modules';
-
-const banner =
-`/*
-THIS IS A GENERATED/BUNDLED FILE BY ESBUILD
-if you want to view the source, please visit the github repository of this plugin
-*/
-`;
-
-const prod = (process.argv[2] === 'production');
-
-esbuild.build({
-    banner: {
-        js: banner,
-    },
-    entryPoints: ['main.ts'],
-    bundle: true,
-    external: [
-        'obsidian',
-        'electron',
-        '@codemirror/autocomplete',
-        '@codemirror/collab',
-        '@codemirror/commands',
-        '@codemirror/language',
-        '@codemirror/lint',
-        '@codemirror/search',
-        '@codemirror/state',
-        '@codemirror/view',
-        '@lezer/common',
-        '@lezer/highlight',
-        '@lezer/lr',
-        ...builtins],
-    format: 'cjs',
-    watch: !prod,
-    target: 'es2018',
-    logLevel: "info",
-    sourcemap: prod ? false : 'inline',
-    treeShaking: true,
-    outfile: 'main.js',
-}).catch(() => process.exit(1));
-```
-
-## Contributing
-
-### Development Workflow
-
-1. **Create Feature Branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make Changes**:
-   - Follow TypeScript best practices
-   - Add proper error handling
-   - Include JSDoc comments for public methods
-
-3. **Test Your Changes**:
+### Build Commands
 ```bash
-   pnpm build
-   # Test in Obsidian
-   ```
+# Install dependencies
+pnpm install
 
-4. **Submit Pull Request**:
-   - Include clear description of changes
-   - Add tests if applicable
-   - Update documentation
+# Typecheck and production bundle
+pnpm run build
 
-### Code Style Guidelines
+# Development build with live watcher
+pnpm run dev
 
-- Use TypeScript strict mode
-- Follow Obsidian plugin conventions
-- Use async/await for API calls
-- Implement proper error handling
-- Add JSDoc comments for public APIs
-
-### Testing
-
-Currently, testing is manual through Obsidian. To test:
-
-1. Build the plugin: `pnpm build`
-2. Enable in Obsidian
-3. Test all commands and settings
-4. Verify error handling with invalid configurations
-
-### Common Development Tasks
-
-#### Adding a New AI Provider
-
-1. **Add Settings**:
-   ```typescript
-   interface PerplexedPluginSettings {
-       newProviderEndpoint: string;
-       newProviderApiKey: string;
-       // ... other settings
-   }
-   ```
-
-2. **Add Query Method**:
-   ```typescript
-   public async queryNewProvider(query: string, options: any): Promise<void> {
-       // Implementation
-   }
-   ```
-
-3. **Register Commands**:
-   ```typescript
-   private registerNewProviderCommands(): void {
-       this.addCommand({
-           id: 'ask-new-provider',
-           name: 'Ask New Provider',
-           editorCallback: (editor: Editor) => {
-               // Modal implementation
-           }
-       });
-   }
-   ```
-
-4. **Update Settings UI**:
-   Add configuration options to `PerplexedSettingTab.display()`
-
-#### Modifying Response Format
-
-The plugin inserts responses directly into the editor. To modify the format:
-
-```typescript
-// In query methods, modify the headerText
-const headerText = `\n\n***\n## Custom Header\n**Question:** ${query}\n\n### **Response**:\n\n`;
+# Code linting with obsidianmd rules
+pnpm run lint
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Not Working**:
-   - Verify API key is correct
-   - Check API key permissions
-   - Ensure endpoint URL is correct
-
-2. **Network Errors**:
-   - Check internet connection
-   - Verify firewall settings
-   - Test endpoint accessibility
-
-3. **Plugin Not Loading**:
-   - Check Obsidian console for errors
-   - Verify plugin is enabled
-   - Check for conflicting plugins
-
-### Debug Mode
-
-Enable debug logging by checking the browser console:
-1. Open Obsidian
-2. Press `Ctrl/Cmd + Shift + I` (Developer Tools)
-3. Check Console tab for plugin logs
-
-### Getting Help
-
-- Check the [Issues](https://github.com/lossless-group/perplexed-plugin/issues) page
-- Review the [Discussions](https://github.com/lossless-group/perplexed-plugin/discussions) forum
-- Contact the development team
+### Architecture Overview
+```text
+obsidian-perplexed-plugin/
+├── main.ts                       # Entrypoint, command registration, and settings UI
+├── manifest.json                 # Plugin ID (obsidian-perplexed) and metadata
+├── esbuild.config.mjs            # esbuild bundler configuration
+│
+├── src/
+│   ├── modals/                   # Obsidian Suggest and Prompt Modals
+│   │   ├── WorkflowPickerModal.ts
+│   │   ├── CaptureProcessModal.ts
+│   │   ├── DirectoryTemplateRunModal.ts
+│   │   └── Provider modals (Perplexity, Gemini, Claude, etc.)
+│   │
+│   ├── services/                 # Core engine services
+│   │   ├── workflowService.ts            # Stored review workflows & process capture
+│   │   ├── directoryTemplateService.ts   # Glob matching, partials, and template fill
+│   │   ├── templateSeederService.ts      # Low-level adapter seeding for dotfiles
+│   │   ├── vaultGitTracking.ts           # Obsidian Git command integration
+│   │   └── Provider services (perplexity, gemini, claude, lmStudio, vane)
+│   │
+│   └── docs/                     # Bundled markdown assets seeded to user vaults
+│       ├── workflows/            # 11 review workflows & workflow README
+│       ├── templates/            # 4 general profile templates & template README
+│       ├── partials/             # Shipped partial snippets (e.g. mermaid-discipline)
+│       └── preambles/            # Shipped request preambles
+```
 
 ---
 
-## About The Lossless Group
+## ⚖️ License & Acknowledgements
 
-[The Lossless Group](https://lossless.group) is a loose collection of individuals and organizations interested in creating winning formulae for using AI and Collaborative Tooling. We consult, invest in startups, run Venture Capital Funds, host Hackathons, build products, write content, and contribute to open source projects.
-
-We are committed to playing on the frontiers of technology and staying curious and engaged.
-
----
-
-**License**: MIT  
-**Author**: The Lossless Group  
-**Support**: [GitHub Issues](https://github.com/lossless-group/perplexed-plugin/issues)
+* Distributed under the [MIT License](LICENSE).
+* **Upstream Attribution**: Forked from [`lossless-group/perplexed-plugin`](https://github.com/lossless-group/perplexed-plugin), originally authored by [The Lossless Group](https://lossless.group).
+* **Current Fork Maintainer**: [jg3](https://github.com/jg3).
+* For questions, bugs, and feature requests, please open an issue on [GitHub Issues](https://github.com/jg3/obsidian-perplexed-plugin/issues).

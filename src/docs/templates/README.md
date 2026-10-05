@@ -9,7 +9,7 @@ This folder is the home of **directory templates** used by the perplexed plugin'
 
 The plugin seeds this folder on first run with the four templates below. You can edit them, delete them, add your own — perplexed only re-seeds when the folder is missing or empty (or when you click **Re-seed templates** in settings, which only fills in templates whose filenames don't already exist).
 
-Market-map, market-category, and standards-and-specs profiles are no longer shipped. If copies from an earlier version are still in this folder, delete those files to stop the command palette from offering them. Perplexed does not delete vault files. Day-to-day review, rewrite, and fact-check instructions live in the workflows folder instead (default `zz-cf-lib/workflows`).
+Market-map, market-category, and standards-and-specs profiles are no longer shipped. If copies from an earlier version are still in this folder, delete those files to stop the command palette from offering them. Perplexed does not delete vault files. Day-to-day review, rewrite, and fact-check instructions live in the workflows folder instead (default `.obsidian-perplexed/workflows`).
 
 ## Shipped templates
 

@@ -22,8 +22,14 @@ export interface DirectoryTemplateSettings {
     requestTimeoutMs: number;
 }
 
+export interface TemplateFileRef {
+    path: string;
+    basename: string;
+    name: string;
+}
+
 export interface TemplateFile {
-    file: TFile;
+    file: TemplateFileRef | TFile;
     frontmatter: Record<string, unknown>;
     title: string;
     description: string;
@@ -31,7 +37,7 @@ export interface TemplateFile {
 }
 
 export interface ParsedTemplate {
-    file: TFile;
+    file: TemplateFileRef | TFile;
     cftConfig: Record<string, unknown>;
     cftSystem: string;
     userSkeleton: string;
@@ -78,6 +84,9 @@ function stripFrontmatter(text: string): string {
 async function readVaultMarkdown(app: App, root: string, name: string): Promise<string | null> {
     const filename = name.endsWith('.md') ? name : `${name}.md`;
     const path = normalizePath(`${root.replace(/\/$/, '')}/${filename}`);
+    if (await app.vault.adapter.exists(path)) {
+        return await app.vault.adapter.read(path);
+    }
     const f = app.vault.getAbstractFileByPath(path);
     if (!(f instanceof TFile)) return null;
     return await app.vault.read(f);
@@ -320,13 +329,49 @@ export function pathMatchesGlobs(path: string, globs: string[]): boolean {
     return globs.some(g => globToRegExp(g).test(path));
 }
 
-export function listTemplates(app: App, root: string): TemplateFile[] {
+export async function listTemplates(app: App, root: string): Promise<TemplateFile[]> {
     const normalizedRoot = root.replace(/\/$/, '');
     if (!normalizedRoot) return [];
-    const all = app.vault.getMarkdownFiles();
     const results: TemplateFile[] = [];
+    const seenPaths = new Set<string>();
+
+    if (await app.vault.adapter.exists(normalizedRoot)) {
+        const listed = await app.vault.adapter.list(normalizedRoot);
+        for (const filePath of listed.files) {
+            if (!filePath.endsWith('.md')) continue;
+            const filename = filePath.split('/').pop() ?? '';
+            const basename = filename.replace(/\.md$/, '');
+            if (basename === 'README') continue;
+            seenPaths.add(filePath);
+
+            try {
+                const content = await app.vault.adapter.read(filePath);
+                const { frontmatter: rawFm } = splitFrontmatter(content);
+                const fm = safeParseYaml(rawFm);
+                const appliesToRaw = fm['applies-to-paths'];
+                const appliesToPaths = Array.isArray(appliesToRaw)
+                    ? appliesToRaw.filter((g): g is string => typeof g === 'string')
+                    : typeof appliesToRaw === 'string' ? [appliesToRaw] : [];
+                const title = typeof fm['title'] === 'string' ? fm['title'] : basename;
+                const description = typeof fm['description'] === 'string' ? fm['description'] : '';
+                results.push({
+                    file: { path: filePath, basename, name: filename },
+                    frontmatter: fm,
+                    title,
+                    description,
+                    appliesToPaths,
+                });
+            } catch {
+                // Ignore read or parse errors for invalid files
+            }
+        }
+    }
+
+    const all = app.vault.getMarkdownFiles();
     for (const file of all) {
         if (!file.path.startsWith(normalizedRoot + '/')) continue;
+        if (seenPaths.has(file.path)) continue;
+        if (file.basename === 'README') continue;
         const cache = app.metadataCache.getFileCache(file);
         const fm = (cache?.frontmatter ?? {}) as Record<string, unknown>;
         const appliesToRaw = fm['applies-to-paths'];
@@ -344,8 +389,15 @@ export function listTemplates(app: App, root: string): TemplateFile[] {
     return results;
 }
 
-export async function loadTemplate(app: App, file: TFile): Promise<ParsedTemplate | null> {
-    const content = await app.vault.read(file);
+export async function loadTemplate(app: App, file: TemplateFileRef | TFile): Promise<ParsedTemplate | null> {
+    let content: string;
+    if (await app.vault.adapter.exists(file.path)) {
+        content = await app.vault.adapter.read(file.path);
+    } else if (file instanceof TFile) {
+        content = await app.vault.read(file);
+    } else {
+        return null;
+    }
     const { body } = splitFrontmatter(content);
     const lines = body.split('\n');
 
