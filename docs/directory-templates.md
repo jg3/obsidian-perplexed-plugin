@@ -140,7 +140,7 @@ These let you query for stale files later (`cf_last_run` older than X), audit wh
 
 ## Shipped templates
 
-Five templates ship inlined into `main.js` (via esbuild's `.md` text loader) and are seeded into the user's vault on first plugin load.
+Four templates ship inlined into `main.js` (via esbuild's `.md` text loader) and are seeded into the user's vault on first plugin load. Market-map, market-category, and standards-and-specs profiles are no longer part of that set. Copies already in a vault stay until you delete them; the seeder never removes files.
 
 | File | Targets | Model | Notes |
 |---|---|---|---|
@@ -148,7 +148,8 @@ Five templates ship inlined into `main.js` (via esbuild's `.md` text loader) and
 | `vocabulary-profile.md` | `Vocabulary/**` | `sonar-pro` | Term definitions with disambiguation through an innovation-consulting lens. |
 | `source-profile.md` | `Sources/**` | `sonar-pro` | Profiles of trusted sources — books, people, channels, publications, journals, reports, events. Type-aware: the system prompt enumerates seven canonical types and the model picks one from frontmatter signals (`youtube_channel_url` → channel, `aliases` → likely book, etc.). Each section has per-type bullet shapes. |
 | `toolkit-profile.md` | `Tooling/**` | `sonar-pro` | Profiles of tools, products, platforms, frameworks. |
-| `market-map-profile.md` | `lost-in-public/market-maps/**`, `market-maps/**` | `sonar-deep-research` | Analyst-grade market-map drafts. Dual flavor: Known Category (Quantum Computing, Humanoid Robots) or Thesis-Driven (e.g., Neural Network Hardware as Brains for Robotics) traversing adjacent categories. Lean v1, single-stage. Skips image return by design — deep-research's image metadata is unreliable and market-map imagery is generated separately (Ideogram → frontmatter `banner_image` / `portrait_image` / `square_image`). Multi-stage v2 (RAG pre-flight to inject canonical Lossless tools/concepts as context + Claude editorial pass to emit `[[wikilink]]`s) is deferred — see the User Notes zone of the template for the roadmap. |
+
+Review, rewrite, and fact-check instructions ship separately as stored workflows (default folder `zz-cf-lib/workflows`) and run from **Run stored workflow**.
 
 `source-profile` is the trickiest because `Sources/` is genuinely heterogeneous. The solution is one template, type-conditional content. Books also trigger Google Books URL handling: frontmatter `google_books_url` is used if present, otherwise the model finds it; either way the URL is harvested into frontmatter post-generation via regex, so subsequent runs skip the search.
 
@@ -167,7 +168,7 @@ This is saved as project memory in the parent monorepo so future templates inher
 
 ## First-run seeder and re-seed
 
-`templateSeederService.ts` bundles the four templates plus the user-facing README into `main.js` at build time, then writes them to the configured templates folder on `onload`. The policy is **two-tier**:
+`templateSeederService.ts` bundles the four general templates, the stored workflows, and the user-facing READMEs into `main.js` at build time, then writes them to the configured folders on `onload`. The policy is **two-tier**:
 
 - **README** (`Content-Dev/Templates/README.md`) — always ensured present. If you delete it, the next plugin load writes it back.
 - **Templates** — only seeded when the templates folder is missing or contains no non-README markdown. A folder with even one shipped template is treated as user-managed and left alone.
@@ -266,9 +267,9 @@ Override semantics:
 
 When to bump above the default:
 
-- **Any analyst-grade template that asks for >6K words of body.** `market-map-profile` and `standards-and-specs-profile` both ship with `max-tokens: 24000` for this reason.
+- **Any template that asks for >6K words of body.** Declare `max-tokens: 24000` (or another ceiling you have tested) so a long draft is not cut off at Perplexity's default output cap.
 - **Templates with deeply nested skeletons** (3+ heading levels) — the model rations its token budget across the skeleton, and a deep skeleton means more sections competing for the same budget.
-- **Templates that demand multiple cards per section** (e.g., the three-tier adoption skeleton in `standards-and-specs-profile` with deeper implementation cards). Each card takes ~150-300 tokens; 15-30 cards × 200 tokens = 3,000-6,000 tokens just for the card sections.
+- **Templates that demand multiple cards per section.** Each card takes ~150-300 tokens; 15-30 cards × 200 tokens = 3,000-6,000 tokens just for the card sections.
 
 **The diagnostic to distinguish max-tokens truncation from wall-clock truncation:**
 

@@ -3,19 +3,29 @@
 
 **Perplexed** is an Obsidian plugin that enables AI-powered content generation with source citations using [Perplexity](https://www.perplexity.ai/), [Anthropic Claude](https://www.anthropic.com/), [Google Gemini](https://ai.google.dev/) (with Google Search grounding), and [Perplexica / Vane](https://github.com/ItzCrazyKns/Vane) (self-hosted). This plugin brings research-grade AI capabilities directly into your Obsidian workspace, allowing you to generate well-cited content for your notes.
 
-## 💼 For Venture Capital, Private Equity, and Equities-Trading Workflows
+## General review workflows
 
-Perplexed ships a set of **analyst-grade directory templates** aimed at the research deliverables a VC analyst, PE associate, equity-research analyst, or trading-desk strategist produces daily. Drop an empty file into the matching folder, run *Apply directory template to current file*, and Perplexity Deep Research returns a 6-9K-word cited analyst draft you can curate into a memo for a partner, an IC, or a portfolio review.
+Perplexed ships a set of **stored workflows** for checking, editing, and rewriting the note you already have open. Select text (or leave the selection empty to use the whole note), run *Run stored workflow*, and pick an instruction. The result is appended under that text. Fact-check workflows cite current sources. The others stay on the supplied text and preserve its meaning.
 
-| Workflow | Template | What it produces |
-|---|---|---|
-| **Naming the players in a category** (incumbents vs challengers vs innovators by financial stage) | `market-category-profile.md` → `concepts/Market-Categories/` | Three-tier company landscape with explicit definitions: **Incumbents** (public / late-stage private / PE-owned), **Challengers** (Series C+ scale-ups, recently public), **Innovators** (Pre-Seed through Series B). Plus Why Now / What's Happening sections covering CAGR + category-creation momentum, and an Industry Coverage section sub-grouped into Market Reports (Gartner, IDC, Forrester, ABI) / Industry Articles / Financial News (Bloomberg, FT, Pitchbook). |
-| **Authoring a market map** (Known Category or Thesis-Driven) | `market-map-profile.md` → `lost-in-public/market-maps/` | Analyst-grade memo with 4-8 sub-segments, 20-40 named innovator cards (Offering / Funding / Why-they-matter / Coverage), Market Dynamics (Sizing / Adoption / Capital Flow), Frontier and Open Questions. Anti-incumbent editorial stance prevents big-tech over-representation. |
-| **Profiling an open spec or standard** an investment thesis depends on | `standards-and-specs-profile.md` → `Sources/Standards-and-Specs/` | Five-way authority typing (de-jure / consortium / vendor-led-open / community / de-facto), three-tier adoption framing with notable holdouts, named editors, stewardship-transition stories, named public critics with their arguments. |
-| **Catalogue an authoritative source** (book, person, channel, report, conference) | `source-profile.md` → `Sources/` | Type-aware emphasis (author / publisher / cadence / methodology), Google Books URL harvesting for books, signature-work catalog. |
-| **Encyclopedia entry on a concept, pattern, or mental model** the desk repeatedly invokes | `concept-profile.md` → `concepts/` | Definition, usage, history, examples, case studies. Mermaid + LaTeX rendering discipline baked in for diagrams and formulas. |
+| Workflow | What it does |
+|---|---|
+| **Unclear claims** | Identify unclear claims or missing evidence. |
+| **Fact-check** | Fact-check this; cite authoritative current sources. |
+| **Tighter executive version** | Suggest a tighter executive version; preserve meaning. |
+| **Contradictions** | Find contradictions, vague terms, and unsupported assertions. |
+| **Design review questions** | Create review questions for this technical design. |
+| **Security claims** | Review this for imprecise security claims, unstated assumptions, and missing controls. Keep recommendations actionable. |
+| **Time-sensitive fact-check** | Fact-check time-sensitive claims. List only claims that require verification and cite primary or authoritative sources. |
+| **Executive rewrite** | Rewrite for an executive audience: concise, concrete, and technically accurate. Preserve the intended meaning. |
+| **Network-security design review** | Identify ambiguity, contradictions, and terms that need definition for a network-security design review. |
+| **Customer-facing explanation** | Turn this into a customer-facing explanation without overselling or losing technical accuracy. |
+| **Capture a process** | Tell me about a checking, editing or modification process to make into another stored workflow. |
 
-Every analyst-grade template runs on `sonar-deep-research`, ships with idle-only timeout safety (`request-timeout-ms: 0`, per-chunk idle timer at 270s) and a 24,000-token output budget (`max-tokens: 24000`) — enough for the longest analyst drafts to land without silent mid-document truncation. See [Directory Templates](#directory-templates) below for the full set and the cft-block grammar for tuning your own.
+The files live in the workflows folder (default `zz-cf-lib/workflows`). Edit them in the vault. **Capture a process** asks you to describe a checking, editing, or modification process and saves a new workflow file beside the others. It does not overwrite a file that is already there.
+
+Four general research templates remain for empty notes: a concept, a vocabulary term, a source, and a toolkit profile. See [Directory Templates](#directory-templates). Market-map, market-category, and standards-and-specs profiles are no longer shipped. Delete any copies still in your templates folder if you do not want the palette to offer them.
+
+After a workflow or directory template writes to the vault, Perplexed reminds you to commit the change locally with [Obsidian Git](https://github.com/Vinzent03/obsidian-git). Settings can instead run that plugin’s local commit. Remote push stays off unless you turn it on.
 
 ## 🎯 Key Features
 ![Perplexed UI Modal interface](https://i.imgur.com/jaZ4UfS.png)
@@ -64,7 +74,7 @@ plugin directory.
 
 ## 📋 Table of Contents
 
-- [For Venture Capital, Private Equity, and Equities-Trading Workflows](#-for-venture-capital-private-equity-and-equities-trading-workflows)
+- [General review workflows](#general-review-workflows)
 - [User Onboarding](#user-onboarding)
   - [Installation](#installation)
   - [Initial Setup](#initial-setup)
@@ -393,6 +403,7 @@ System Prompt: "You are a technical expert who explains complex concepts clearly
 |---------|-------------|-------|
 | `Ask Perplexity` | Query Perplexity AI with full configuration | Editor command with modal interface |
 | `Enhance Selected Text with Perplexity` | Enhance selected text using Perplexity AI | Editor command with modal interface |
+| `Run stored workflow` | Apply a saved review, rewrite, or fact-check instruction to the selection or the whole note | Editor command with a workflow picker |
 | `Update Perplexity URL` | Change Perplexity API endpoint | Settings command |
 | `Show Perplexity Settings` | Display current Perplexity configuration | Debug command |
 
@@ -450,7 +461,7 @@ Two peer folders alongside `templates/` keep editorial rules vault-visible and D
 
 ```
 Content-Dev/
-├── templates/         (your seven profile templates)
+├── templates/         (your four profile templates)
 ├── partials/          (reusable snippets included via {{include: name}})
 │   ├── mermaid-discipline.md      (paired BAD/GOOD examples + 6-item self-check)
 │   └── latex-discipline.md        (Obsidian MathJax delimiters + $ escaping)
@@ -468,7 +479,7 @@ Fix the mermaid quoting rule once in `partials/mermaid-discipline.md` and every 
 
 ### Shipped templates
 
-Seven templates ship inlined into the plugin and seed into your vault on first plugin load:
+Four templates ship inlined into the plugin and seed into your vault on first plugin load. All four use Perplexity's `sonar-pro`.
 
 | File | Targets | Use for |
 |---|---|---|
@@ -476,15 +487,12 @@ Seven templates ship inlined into the plugin and seed into your vault on first p
 | `vocabulary-profile.md` | `Vocabulary/**` | Term definitions with disambiguation through an innovation-consulting lens. |
 | `source-profile.md` | `Sources/**` | Profiles of books, people, channels, publications, journals, reports, events — type-aware, with Google Books URL harvesting for books. |
 | `toolkit-profile.md` | `Tooling/**` | Profiles of tools, products, platforms, frameworks. |
-| `market-map-profile.md` | `lost-in-public/market-maps/**`, `market-maps/**` | Analyst-grade market-map drafts — both Known Category (e.g., Humanoid Robots) and Thesis-Driven (e.g., Neural Network Hardware as Brains for Robotics). Runs on `sonar-deep-research` with idle-only timeout, `max-tokens: 24000`, and a 40-min absolute wall-clock ceiling. |
-| `standards-and-specs-profile.md` | `Sources/Standards-and-Specs/**`, `Standards-and-Specs/**` | Analyst-grade profiles of open specs and standards. Five-way authority typing (de-jure / consortium / vendor-led-open / community / de-facto). Three-tier structural adoption framing (incumbents / challengers / innovators) plus notable holdouts. Named editors, stewardship transitions, named critics. |
-| `market-category-profile.md` | `concepts/Market-Categories/**`, `Market-Categories/**` | Concept-folder reference card for a named market category. Three-tier company landscape with explicit FINANCIAL-STAGE definitions: Incumbents (public / late-stage private / PE-owned) → Challengers (Series C+ scale-ups, recently public) → Innovators (Pre-Seed through Series B). Separate Why Now / What's Happening sections covering CAGR + category-creation momentum. Industry Coverage sub-grouped into Market Reports / Industry Articles / Financial News. |
 
-The first four templates use Perplexity's `sonar-pro`. The three deep-research templates (`market-map-profile`, `standards-and-specs-profile`, `market-category-profile`) use `sonar-deep-research` and declare per-template cft-block overrides for the wall-clock ceiling (`request-timeout-ms`), the per-chunk idle timer (`stream-idle-timeout-ms`), and the Perplexity output-token budget (`max-tokens: 24000`). See [`docs/directory-templates.md`](docs/directory-templates.md) for the full cft-block grammar and the diagnostic table for distinguishing wall-clock-timeout truncation from max_tokens truncation.
+Market-map, market-category, and standards-and-specs profiles are no longer shipped. A vault that already has those files will keep offering them until you delete the copies under your templates root. See [`docs/directory-templates.md`](docs/directory-templates.md) for the cft-block grammar, including `max-tokens` and timeout overrides if you write a long template of your own.
 
 ### Auto-seed behavior
 
-On first plugin load, Perplexed writes the four templates plus a user-facing `README.md` to `Content-Dev/Templates/` in your vault. The seeder uses a two-tier policy:
+On first plugin load, Perplexed writes the four templates plus a user-facing `README.md` to the templates root (default `zz-cf-lib/templates`), and the stored workflows plus their README to the workflows root (default `zz-cf-lib/workflows`). The seeder uses a two-tier policy:
 
 - **README** — always ensured present; if you delete it, the next plugin load writes it back.
 - **Templates** — only seeded when the templates folder is missing or contains no non-README markdown. A folder with even one shipped template is treated as user-managed and left alone.

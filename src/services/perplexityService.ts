@@ -388,7 +388,8 @@ export class PerplexityService {
         stream: boolean, 
         editor: Editor, 
         options?: PerplexityOptions
-    ): Promise<void> {
+    ): Promise<boolean> {
+        let wrote = false;
         console.debug('🚀 PerplexityService.queryPerplexity called');
         console.debug('📊 Parameters:', { model, stream, options, queryLength: query.length });
         
@@ -574,6 +575,7 @@ export class PerplexityService {
                     const response = { ok: true, body: webStream } as unknown as Response;
                     console.debug('✅ Streaming response via Node.js ready, handling SSE...');
                     await this.handleStreamingResponse(response, editor, responseCursor, requestId, headerText, isDeepResearch);
+                    wrote = true;
                 } else {
                     console.debug('🔄 Making non-streaming API request...');
                     // Use Obsidian's request method for non-streaming with cache busting
@@ -603,6 +605,7 @@ export class PerplexityService {
                         }
 
                         editor.replaceRange(content, responseCursor);
+                        wrote = true;
 
                         if (options?.return_citations) {
                             if (data.search_results && data.search_results.length > 0) {
@@ -654,6 +657,54 @@ export class PerplexityService {
                 loadingNotice.hide();
             }
         }
+        return wrote;
+    }
+
+    /**
+     * Non-streaming completion that returns the model text instead of writing
+     * it into an editor. Used when a workflow must save a new vault file.
+     */
+    public async completePerplexity(
+        query: string,
+        model: string,
+        options?: PerplexityOptions,
+    ): Promise<string> {
+        const convertedFilter = this.convertRecencyFilter(options?.search_recency_filter ?? '');
+        const payload: PerplexityPayload = {
+            model,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Return only the requested document. Do not wrap it in a code fence.',
+                },
+                { role: 'user', content: query },
+            ],
+            stream: false,
+            return_citations: options?.return_citations ?? false,
+            return_images: false,
+            return_related_questions: false,
+        };
+        if (convertedFilter !== undefined) {
+            payload.search_recency_filter = convertedFilter;
+        }
+
+        const response = await request({
+            url: this.settings.perplexityEndpoint,
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.settings.perplexityApiKey}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = JSON.parse(response) as PerplexityResponse;
+        const content = data.choices?.[0]?.message?.content ?? '';
+        if (content.trim().length === 0) {
+            throw new Error('Perplexity returned an empty workflow.');
+        }
+        return content;
     }
 
     private async handleStreamingResponse(

@@ -9,6 +9,8 @@ This folder is the home of **directory templates** used by the perplexed plugin'
 
 The plugin seeds this folder on first run with the four templates below. You can edit them, delete them, add your own — perplexed only re-seeds when the folder is missing or empty (or when you click **Re-seed templates** in settings, which only fills in templates whose filenames don't already exist).
 
+Market-map, market-category, and standards-and-specs profiles are no longer shipped. If copies from an earlier version are still in this folder, delete those files to stop the command palette from offering them. Perplexed does not delete vault files. Day-to-day review, rewrite, and fact-check instructions live in the workflows folder instead (default `zz-cf-lib/workflows`).
+
 ## Shipped templates
 
 | File | Targets paths | Use for |
@@ -17,9 +19,6 @@ The plugin seeds this folder on first run with the four templates below. You can
 | `vocabulary-profile.md` | `Vocabulary/**` | Definitions of terms with disambiguation through an innovation-consulting lens. |
 | `source-profile.md` | `Sources/**` | Profiles of trusted sources — books, people, channels, publications, journals, reports, events. Adapts emphasis to the source's type. |
 | `toolkit-profile.md` | `Tooling/**` | Profiles of tools, products, platforms, frameworks. |
-| `market-map-profile.md` | `lost-in-public/market-maps/**`, `market-maps/**` | Analyst-grade market-map drafts — both Known Category (e.g., Humanoid Robots) and Thesis-Driven (e.g., Neural Network Hardware as Brains for Robotics). Runs on `sonar-deep-research`. Single-stage v1; multi-stage RAG + Claude-edit pass is planned. |
-| `standards-and-specs-profile.md` | `Sources/Standards-and-Specs/**`, `Standards-and-Specs/**` | Analyst-grade profiles of open specs and standards. Five-way authority typing (de-jure / consortium / vendor-led-open / community / de-facto). Three-tier structural adoption framing (incumbents / challengers / innovators) plus notable holdouts. Named editors, stewardship transitions, named critics. Runs on `sonar-deep-research` with idle-only timeout safety. |
-| `market-category-profile.md` | `concepts/Market-Categories/**`, `Market-Categories/**` | Concept-folder reference card for a named market category. Three-tier company landscape with explicit FINANCIAL-STAGE definitions: Incumbents (public / late-stage private / PE-owned) → Challengers (Series C+ scale-ups, recently public) → Innovators (Pre-Seed through Series B). Big tech belongs in Incumbents — no anti-incumbent cap here, unlike the market-map template. Separate Why Now / What's Happening sections covering CAGR + category-creation momentum. Industry Coverage section sub-grouped into Market Reports / Industry Articles / Financial News. Runs on `sonar-deep-research`. |
 
 ## How a template works
 

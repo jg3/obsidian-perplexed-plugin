@@ -20,6 +20,8 @@ import { ArticleGeneratorModal } from './src/modals/ArticleGeneratorModal';
 import { TextEnhancementModal } from './src/modals/TextEnhancementModal';
 import { TextEnhancementWithImagesModal } from './src/modals/TextEnhancementWithImagesModal';
 import { DirectoryTemplatePickerModal } from './src/modals/DirectoryTemplatePickerModal';
+import { WorkflowPickerModal } from './src/modals/WorkflowPickerModal';
+import { CaptureProcessModal } from './src/modals/CaptureProcessModal';
 import { DirectoryTemplateRunModal } from './src/modals/DirectoryTemplateRunModal';
 import type { TemplateRunChoice } from './src/modals/DirectoryTemplateRunModal';
 import { FolderPickerModal } from './src/modals/FolderPickerModal';
@@ -38,6 +40,15 @@ import type { TFile } from 'obsidian';
 import { findImagesForSelection } from './src/services/findImagesService';
 import type { FindImagesSettings } from './src/services/findImagesService';
 import { reSeedMissingFiles, seedTemplatesIfMissing } from './src/services/templateSeederService';
+import { trackVaultChanges } from './src/services/vaultGitTracking';
+import type { VaultGitTrackingMode } from './src/services/vaultGitTracking';
+import {
+    captureProcessAsWorkflow,
+    loadWorkflows,
+    reviewSubject,
+    runReviewWorkflow,
+} from './src/services/workflowService';
+import type { StoredWorkflow } from './src/services/workflowService';
 
 
 interface PerplexedPluginSettings {
@@ -103,6 +114,9 @@ interface PerplexedPluginSettings {
     directoryTemplatesUserPreambles: { name: string; when: 'always' | 'return-images' }[];
     directoryTemplatesFrontmatterWhitelist: string[];
     directoryTemplatesRequestTimeoutMs: number;
+    workflowsRoot: string;
+    vaultGitTracking: VaultGitTrackingMode;
+    vaultGitPush: boolean;
 
     // Find images for selection
     findImagesMaxImages: number;
@@ -331,6 +345,9 @@ Structure the article as follows:
     ],
     directoryTemplatesFrontmatterWhitelist: ['title', 'og_description', 'tags', 'og_image'],
     directoryTemplatesRequestTimeoutMs: 1800000,
+    workflowsRoot: 'zz-cf-lib/workflows',
+    vaultGitTracking: 'remind',
+    vaultGitPush: false,
 
     // Find images for selection
     findImagesMaxImages: 3
@@ -357,16 +374,16 @@ export default class PerplexedPlugin extends Plugin {
             await this.loadSettings();
             console.debug('Perplexed Plugin: Settings loaded successfully');
 
-            // First-run seeding: if the configured templates root is missing
-            // or empty, drop in the four shipped templates plus a README so a
-            // freshly-installed perplexed has working defaults out of the box.
-            // Idempotent — never overwrites existing files.
+            // First-run seeding: if a configured folder is missing or empty,
+            // drop in the shipped templates, partials, preambles, and stored
+            // workflows. Idempotent — never overwrites existing files.
             try {
                 const result = await seedTemplatesIfMissing(
                     this.app,
                     this.settings.directoryTemplatesRoot,
                     this.settings.directoryTemplatesPartialsRoot,
                     this.settings.directoryTemplatesPreamblesRoot,
+                    this.settings.workflowsRoot,
                 );
                 if (result.seeded > 0) {
                     console.debug(`Perplexed Plugin: seeded ${result.seeded.toString()} template(s) (${result.reason})`);
@@ -584,6 +601,14 @@ export default class PerplexedPlugin extends Plugin {
                     this.batchCancelled = true;
                     new Notice('Stop requested — finishing current file then halting.');
                 }
+            });
+
+            this.addCommand({
+                id: 'run-stored-workflow',
+                name: 'Run stored workflow',
+                editorCallback: (editor: Editor) => {
+                    void this.runStoredWorkflow(editor);
+                },
             });
 
             // Find images for the current selection — anchors search on the
@@ -1257,7 +1282,10 @@ export default class PerplexedPlugin extends Plugin {
         }
 
         new DirectoryTemplateRunModal(this.app, choices, (template, model) => {
-            void applyDirectoryTemplate(this.app, dirSettings, target, template, { modelOverride: model });
+            void applyDirectoryTemplate(this.app, dirSettings, target, template, { modelOverride: model })
+                .then(result => {
+                    if (result.status === 'applied') this.trackVaultGit();
+                });
         }).open();
     }
 
@@ -1356,12 +1384,79 @@ export default class PerplexedPlugin extends Plugin {
             if (result.errors.length > 0) {
                 console.warn('Directory-template batch errors:', result.errors);
             }
+            if (result.appliedFill + result.appliedAppend > 0) {
+                this.trackVaultGit();
+            }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             new Notice(`Batch failed: ${msg}`);
         } finally {
             progressNotice.hide();
             this.batchCancelled = false;
+        }
+    }
+
+    private trackVaultGit(): void {
+        trackVaultChanges(this.app, this.settings.vaultGitTracking, this.settings.vaultGitPush);
+    }
+
+    private async runStoredWorkflow(editor: Editor): Promise<void> {
+        const perplexityService = this.perplexityService;
+        if (!perplexityService) {
+            new Notice('Perplexity service not initialized. Please check console for errors and try the debug command.');
+            return;
+        }
+        if (!this.settings.perplexityApiKey) {
+            new Notice('Perplexity API key is not set. Configure it in perplexed settings.');
+            return;
+        }
+
+        const workflows = await loadWorkflows(this.app, this.settings.workflowsRoot);
+        if (workflows.length === 0) {
+            new Notice(`No stored workflows under "${this.settings.workflowsRoot}".`);
+            return;
+        }
+
+        new WorkflowPickerModal(this.app, workflows, (workflow) => {
+            if (workflow.kind === 'capture') {
+                new CaptureProcessModal(this.app, (description) => {
+                    void this.captureWorkflow(workflow, description);
+                }).open();
+                return;
+            }
+
+            const subject = reviewSubject(editor);
+            if (!subject) {
+                new Notice('Select text, or open a note with content, before running this workflow.');
+                return;
+            }
+
+            void runReviewWorkflow(editor, perplexityService, workflow, subject).then(wrote => {
+                if (!wrote) return;
+                new Notice(`Ran "${workflow.title}".`);
+                this.trackVaultGit();
+            });
+        }).open();
+    }
+
+    private async captureWorkflow(workflow: StoredWorkflow, description: string): Promise<void> {
+        const perplexityService = this.perplexityService;
+        if (!perplexityService) {
+            new Notice('Perplexity service not initialized.');
+            return;
+        }
+        try {
+            await captureProcessAsWorkflow(
+                this.app,
+                perplexityService,
+                this.settings.workflowsRoot,
+                workflow,
+                description,
+            );
+            this.trackVaultGit();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            new Notice(`Could not save workflow: ${msg}`);
         }
     }
 }
@@ -2065,11 +2160,63 @@ class PerplexedSettingTab extends PluginSettingTab {
                             this.plugin.settings.directoryTemplatesRoot,
                             this.plugin.settings.directoryTemplatesPartialsRoot,
                             this.plugin.settings.directoryTemplatesPreamblesRoot,
+                            this.plugin.settings.workflowsRoot,
                         );
                     } catch (error) {
                         const msg = error instanceof Error ? error.message : String(error);
                         new Notice(`Re-seed failed: ${msg}`);
                     }
+                })
+            );
+
+        new Setting(containerEl).setName('Stored workflows').setHeading();
+        containerEl.createEl('p', {
+            text: 'Review, rewrite, and fact-check instructions live as Markdown files. Run stored workflow applies one to the selection, or to the whole note when nothing is selected. Capture a process writes a new workflow file and does not overwrite existing ones.',
+            cls: 'setting-item-description'
+        });
+
+        new Setting(containerEl)
+            .setName('Workflows root')
+            .setDesc('Vault-relative folder where stored workflows live.')
+            .addText(text => text
+                .setPlaceholder('Zz-cf-lib/workflows')
+                .setValue(this.plugin.settings.workflowsRoot)
+                .onChange(async (value: string) => {
+                    this.plugin.settings.workflowsRoot = value.trim();
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl).setName('Vault Git').setHeading();
+        containerEl.createEl('p', {
+            text: 'After a directory template or stored workflow writes to the vault, perplexed can remind you to commit locally with Obsidian Git, or ask that plugin to commit. Remote push stays off unless you enable it.',
+            cls: 'setting-item-description'
+        });
+
+        new Setting(containerEl)
+            .setName('Track vault changes')
+            .setDesc('Remind shows a notice. Commit locally runs Obsidian Git’s commit command when that plugin is installed. Off does nothing.')
+            .addDropdown(drop => drop
+                .addOption('remind', 'Remind')
+                .addOption('commit-local', 'Commit locally')
+                .addOption('off', 'Off')
+                .setValue(this.plugin.settings.vaultGitTracking)
+                .onChange(async (value: string) => {
+                    if (value === 'remind' || value === 'commit-local' || value === 'off') {
+                        this.plugin.settings.vaultGitTracking = value;
+                        await this.plugin.saveSettings();
+                    }
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Also push to the remote')
+            .setDesc('When tracking is set to commit locally, run Obsidian Git’s commit-and-push command. Leave this off to keep the commit on this machine.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.vaultGitPush)
+                .onChange(async (value: boolean) => {
+                    this.plugin.settings.vaultGitPush = value;
+                    await this.plugin.saveSettings();
                 })
             );
 
