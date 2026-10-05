@@ -3,6 +3,8 @@ import type { TFile } from 'obsidian';
 declare module 'obsidian' {
   interface CommandsApi {
     commands: Record<string, unknown>;
+    listCommands(): { id: string }[];
+    executeCommandById(id: string): boolean;
   }
 
   interface App {

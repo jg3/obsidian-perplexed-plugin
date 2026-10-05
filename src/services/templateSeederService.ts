@@ -6,9 +6,19 @@ import conceptProfile from '../docs/templates/concept-profile.md';
 import vocabularyProfile from '../docs/templates/vocabulary-profile.md';
 import sourceProfile from '../docs/templates/source-profile.md';
 import toolkitProfile from '../docs/templates/toolkit-profile.md';
-import marketMapProfile from '../docs/templates/market-map-profile.md';
-import standardsAndSpecsProfile from '../docs/templates/standards-and-specs-profile.md';
-import marketCategoryProfile from '../docs/templates/market-category-profile.md';
+
+import workflowsReadme from '../docs/workflows/README.md';
+import unclearClaims from '../docs/workflows/unclear-claims.md';
+import factCheck from '../docs/workflows/fact-check.md';
+import tighterExecutiveVersion from '../docs/workflows/tighter-executive-version.md';
+import contradictions from '../docs/workflows/contradictions.md';
+import designReviewQuestions from '../docs/workflows/design-review-questions.md';
+import securityClaims from '../docs/workflows/security-claims.md';
+import timeSensitiveFactCheck from '../docs/workflows/time-sensitive-fact-check.md';
+import executiveRewrite from '../docs/workflows/executive-rewrite.md';
+import networkSecurityDesignReview from '../docs/workflows/network-security-design-review.md';
+import customerFacingExplanation from '../docs/workflows/customer-facing-explanation.md';
+import captureAProcess from '../docs/workflows/capture-a-process.md';
 
 import partialsReadme from '../docs/partials/README.md';
 import mermaidDisciplinePartial from '../docs/partials/mermaid-discipline.md';
@@ -34,9 +44,21 @@ const TEMPLATE_FILES: SeedFile[] = [
     { name: 'vocabulary-profile.md', content: vocabularyProfile },
     { name: 'source-profile.md', content: sourceProfile },
     { name: 'toolkit-profile.md', content: toolkitProfile },
-    { name: 'market-map-profile.md', content: marketMapProfile },
-    { name: 'standards-and-specs-profile.md', content: standardsAndSpecsProfile },
-    { name: 'market-category-profile.md', content: marketCategoryProfile },
+];
+
+const WORKFLOWS_README: SeedFile = { name: 'README.md', content: workflowsReadme };
+const WORKFLOW_FILES: SeedFile[] = [
+    { name: 'unclear-claims.md', content: unclearClaims },
+    { name: 'fact-check.md', content: factCheck },
+    { name: 'tighter-executive-version.md', content: tighterExecutiveVersion },
+    { name: 'contradictions.md', content: contradictions },
+    { name: 'design-review-questions.md', content: designReviewQuestions },
+    { name: 'security-claims.md', content: securityClaims },
+    { name: 'time-sensitive-fact-check.md', content: timeSensitiveFactCheck },
+    { name: 'executive-rewrite.md', content: executiveRewrite },
+    { name: 'network-security-design-review.md', content: networkSecurityDesignReview },
+    { name: 'customer-facing-explanation.md', content: customerFacingExplanation },
+    { name: 'capture-a-process.md', content: captureAProcess },
 ];
 
 const PARTIALS_README: SeedFile = { name: 'README.md', content: partialsReadme };
@@ -163,6 +185,7 @@ export async function seedTemplatesIfMissing(
     templatesRoot: string,
     partialsRoot?: string,
     preamblesRoot?: string,
+    workflowsRoot?: string,
     options: { quiet?: boolean } = {},
 ): Promise<{ seeded: number; reason: SeedReason }> {
     const quiet = options.quiet === true;
@@ -177,6 +200,10 @@ export async function seedTemplatesIfMissing(
     if (preamblesRoot && preamblesRoot.trim().length > 0) {
         const preambles = await seedFolder(app, preamblesRoot, PREAMBLES_README, PREAMBLE_FILES);
         totalSeeded += preambles.seeded;
+    }
+    if (workflowsRoot && workflowsRoot.trim().length > 0) {
+        const workflows = await seedFolder(app, workflowsRoot, WORKFLOWS_README, WORKFLOW_FILES);
+        totalSeeded += workflows.seeded;
     }
 
     if (!quiet && totalSeeded > 0) {
@@ -196,6 +223,7 @@ export async function reSeedMissingFiles(
     templatesRoot: string,
     partialsRoot?: string,
     preamblesRoot?: string,
+    workflowsRoot?: string,
 ): Promise<{ seeded: number; skipped: number }> {
     let seeded = 0;
     let skipped = 0;
@@ -208,6 +236,9 @@ export async function reSeedMissingFiles(
     }
     if (preamblesRoot && preamblesRoot.trim().length > 0) {
         groups.push({ root: preamblesRoot, files: [PREAMBLES_README, ...PREAMBLE_FILES] });
+    }
+    if (workflowsRoot && workflowsRoot.trim().length > 0) {
+        groups.push({ root: workflowsRoot, files: [WORKFLOWS_README, ...WORKFLOW_FILES] });
     }
 
     for (const { root, files } of groups) {
